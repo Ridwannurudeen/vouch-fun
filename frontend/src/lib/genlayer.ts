@@ -1,23 +1,17 @@
 import { createClient, createAccount } from "genlayer-js";
-import { simulator } from "genlayer-js/chains";
+import { localnet, studionet, testnetAsimov } from "genlayer-js/chains";
 
 // Dynamic chain selection based on env
-const NETWORK = import.meta.env.VITE_NETWORK || "simulator";
+const NETWORK = import.meta.env.VITE_NETWORK || "studionet";
 const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "";
 
 // NOTE: createAccount() is ephemeral — new account on every page load.
 const account = createAccount();
 
 function getChain() {
-  if (NETWORK === "testnet-bradbury") {
-    try {
-      const { testnetBradbury } = require("genlayer-js/chains");
-      return testnetBradbury;
-    } catch {
-      return simulator;
-    }
-  }
-  return simulator;
+  if (NETWORK === "localnet") return localnet;
+  if (NETWORK === "testnet-asimov" || NETWORK === "testnet-bradbury") return testnetAsimov;
+  return studionet;
 }
 
 export const client = createClient({
