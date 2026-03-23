@@ -1,0 +1,29 @@
+export interface CodeActivity {
+  grade: string;
+  repos: number;
+  commits_last_year: number;
+  languages: string[];
+  stars_received: number;
+  reasoning: string;
+}
+
+export interface OnchainActivity {
+  grade: string;
+  tx_count: number;
+  first_tx_age_days: number;
+  contracts_deployed: number;
+  suspicious_patterns: boolean;
+  reasoning: string;
+}
+
+export interface TrustProfile {
+  handle: string;
+  sources_scraped: string[];
+  generated_at: number;
+  code_activity: CodeActivity;
+  onchain_activity: OnchainActivity;
+  overall: {
+    trust_tier: "TRUSTED" | "MODERATE" | "LOW" | "UNKNOWN";
+    summary: string;
+  };
+}
