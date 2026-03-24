@@ -48,6 +48,7 @@ export async function generateProfile(handle: string): Promise<any> {
     address: contractAddress,
     functionName: "vouch",
     args: [handle],
+    value: 0n,
   });
   const receipt = await client.waitForTransactionReceipt({
     hash: txHash,
@@ -62,6 +63,7 @@ export async function generateAddressProfile(address: string): Promise<any> {
     address: contractAddress,
     functionName: "vouch_address",
     args: [address],
+    value: 0n,
   });
   const receipt = await client.waitForTransactionReceipt({
     hash: txHash,
@@ -76,6 +78,7 @@ export async function refreshProfile(handle: string): Promise<any> {
     address: contractAddress,
     functionName: "refresh",
     args: [handle],
+    value: 0n,
   });
   const receipt = await client.waitForTransactionReceipt({
     hash: txHash,
@@ -92,7 +95,8 @@ export async function getStats(): Promise<{ profile_count: number; query_count: 
     args: [],
   });
   try {
-    return typeof result === "string" ? JSON.parse(result) : result;
+    const parsed = typeof result === "string" ? JSON.parse(result) : result;
+    return parsed as { profile_count: number; query_count: number };
   } catch {
     return { profile_count: 0, query_count: 0 };
   }
