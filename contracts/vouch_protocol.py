@@ -8,12 +8,13 @@ Uses two non-det blocks:
   - strict_eq for factual data extraction (Block 1)
   - prompt_non_comparative for subjective trust synthesis (Block 2)
 
-Storage: TreeMap[Address, str] (Bradbury-compatible).
+Storage: str primitives only (TreeMap broken on Bradbury).
 Handle index: str primitive storing JSON dict for handle->address resolution.
+Profiles: str primitive storing JSON dict of address->profile mappings.
 """
+from genlayer import *
 import json
 import re
-import gl  # type: ignore[import-not-found]
 
 
 # --- Pure helpers (inlined — GenLayer contracts can't import sibling files) ---
@@ -110,17 +111,27 @@ def _synthesis_prompt(github_data: dict, onchain_data: dict) -> str:
 # --- Contract ---
 
 class VouchProtocol(gl.Contract):
-    profiles: TreeMap[Address, str]   # wallet_address -> JSON profile string
-    handle_index: str                 # JSON dict: '{"handle":"0xaddr",...}'
+    profiles_data: str    # JSON dict: '{"0xaddr": {profile...}, ...}'
+    handle_index: str     # JSON dict: '{"handle": "0xaddr", ...}'
     profile_count: u32
     query_count: u32
 
     def __init__(self):
         self.profile_count = 0
         self.query_count = 0
+        self.profiles_data = "{}"
         self.handle_index = "{}"
 
     # --- Internal helpers ---
+
+    def _get_profiles(self) -> dict:
+        try:
+            return json.loads(self.profiles_data)
+        except Exception:
+            return {}
+
+    def _set_profiles(self, profiles: dict):
+        self.profiles_data = json.dumps(profiles)
 
     def _get_index(self) -> dict:
         try:
@@ -131,12 +142,18 @@ class VouchProtocol(gl.Contract):
     def _set_index(self, index: dict):
         self.handle_index = json.dumps(index)
 
+    def _get_cached(self, address: str) -> str:
+        profiles = self._get_profiles()
+        return profiles.get(address, "")
+
     def _store_profile(self, address: str, handle: str, profile: dict, sources: list):
         profile["handle"] = handle
         profile["sources_scraped"] = sources
         profile["vouched_by"] = address
         final_json = json.dumps(profile)
-        self.profiles[address] = final_json
+        profiles = self._get_profiles()
+        profiles[address] = final_json
+        self._set_profiles(profiles)
         index = self._get_index()
         if handle not in index:
             index[handle] = address
@@ -156,7 +173,7 @@ class VouchProtocol(gl.Contract):
         caller = gl.message.sender_account
 
         # Cache hit -> return immediately
-        cached = self.profiles.get(caller, "")
+        cached = self._get_cached(caller)
         if cached:
             self.query_count += 1
             return cached
@@ -233,8 +250,11 @@ class VouchProtocol(gl.Contract):
         caller = gl.message.sender_account
 
         # Clear cache
-        self.profiles[caller] = ""
-        self.profile_count -= 1  # Will be re-incremented by _store_profile
+        profiles = self._get_profiles()
+        if caller in profiles:
+            del profiles[caller]
+            self._set_profiles(profiles)
+            self.profile_count -= 1  # Will be re-incremented by _store_profile
 
         handle = _sanitize_handle(github_handle)
 
@@ -305,7 +325,7 @@ class VouchProtocol(gl.Contract):
     def get_profile(self, address: str) -> str:
         """Return cached profile JSON by address. Primary composable API."""
         addr = _validate_address(address)
-        return self.profiles.get(addr, "{}")
+        return self._get_cached(addr) or "{}"
 
     @gl.public.view
     def get_profile_by_handle(self, github_handle: str) -> str:
@@ -315,14 +335,14 @@ class VouchProtocol(gl.Contract):
         addr = index.get(handle, "")
         if not addr:
             return "{}"
-        return self.profiles.get(addr, "{}")
+        return self._get_cached(addr) or "{}"
 
     @gl.public.view
     def get_trust_tier(self, address: str) -> str:
         """Return just the tier: TRUSTED / MODERATE / LOW / UNKNOWN.
         Lightweight composable endpoint for other contracts."""
         addr = _validate_address(address)
-        raw = self.profiles.get(addr, "")
+        raw = self._get_cached(addr)
         if not raw:
             return "UNKNOWN"
         try:

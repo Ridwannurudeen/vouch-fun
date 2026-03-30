@@ -4,8 +4,8 @@
 Demonstrates composability: checks vouch.fun trust tier before
 allowing an action. Any GenLayer contract can do this with one call.
 """
+from genlayer import *
 import json
-import gl  # type: ignore[import-not-found]
 
 
 class TrustedTransfer(gl.Contract):
