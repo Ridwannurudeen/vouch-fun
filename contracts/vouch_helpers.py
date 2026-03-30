@@ -109,3 +109,22 @@ def parse_profile_json(raw: str) -> dict:
             "onchain_activity": {"grade": "N/A", "reasoning": "Parse failed"},
             "overall": {"trust_tier": "UNKNOWN", "summary": "Could not parse profile"},
         }
+
+
+def get_handle_index(index_str: str) -> dict:
+    """Parse the handle index JSON string."""
+    try:
+        return json.loads(index_str)
+    except (json.JSONDecodeError, TypeError):
+        return {}
+
+
+def set_handle_index(index: dict) -> str:
+    """Serialize the handle index to JSON string."""
+    return json.dumps(index)
+
+
+def resolve_handle(index_str: str, handle: str) -> str:
+    """Resolve a GitHub handle to a wallet address using the index."""
+    index = get_handle_index(index_str)
+    return index.get(handle.strip().lower(), "")
