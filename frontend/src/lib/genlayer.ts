@@ -1,31 +1,26 @@
 import { createClient, createAccount } from "genlayer-js";
-import { localnet, studionet, testnetAsimov } from "genlayer-js/chains";
+import { testnetBradbury } from "genlayer-js/chains";
 
-// Dynamic chain selection based on env
-const NETWORK = import.meta.env.VITE_NETWORK || "studionet";
 const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "";
 
-// NOTE: createAccount() is ephemeral — new account on every page load.
+// Ephemeral account — acceptable for hackathon demo
 const account = createAccount();
 
-function getChain() {
-  if (NETWORK === "localnet") return localnet;
-  if (NETWORK === "testnet-asimov" || NETWORK === "testnet-bradbury") return testnetAsimov;
-  return studionet;
-}
-
 export const client = createClient({
-  chain: getChain(),
+  chain: testnetBradbury,
   account,
 });
 
 export const contractAddress = CONTRACT_ADDRESS as `0x${string}`;
 
-export async function readProfile(handle: string): Promise<any> {
+/**
+ * Read profile by wallet address (composable API).
+ */
+export async function readProfile(address: string): Promise<any> {
   const result = await client.readContract({
     address: contractAddress,
     functionName: "get_profile",
-    args: [handle.trim().toLowerCase()],
+    args: [address.trim().toLowerCase()],
   });
   try {
     return typeof result === "string" ? JSON.parse(result) : result;
@@ -34,11 +29,41 @@ export async function readProfile(handle: string): Promise<any> {
   }
 }
 
-export async function readTrustTier(handle: string): Promise<string> {
+/**
+ * Read profile by GitHub handle (resolves via on-chain index).
+ */
+export async function readProfileByHandle(handle: string): Promise<any> {
+  const result = await client.readContract({
+    address: contractAddress,
+    functionName: "get_profile_by_handle",
+    args: [handle.trim().toLowerCase()],
+  });
+  try {
+    const parsed = typeof result === "string" ? JSON.parse(result) : result;
+    if (!parsed || !parsed.overall) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve a GitHub handle to a wallet address.
+ */
+export async function lookupAddress(handle: string): Promise<string> {
+  const result = await client.readContract({
+    address: contractAddress,
+    functionName: "lookup_address",
+    args: [handle.trim().toLowerCase()],
+  });
+  return String(result || "");
+}
+
+export async function readTrustTier(address: string): Promise<string> {
   const result = await client.readContract({
     address: contractAddress,
     functionName: "get_trust_tier",
-    args: [handle.trim().toLowerCase()],
+    args: [address.trim().toLowerCase()],
   });
   return String(result);
 }
@@ -48,21 +73,6 @@ export async function generateProfile(handle: string): Promise<any> {
     address: contractAddress,
     functionName: "vouch",
     args: [handle],
-    value: 0n,
-  });
-  const receipt = await client.waitForTransactionReceipt({
-    hash: txHash,
-    retries: 120,
-    interval: 5000,
-  });
-  return receipt;
-}
-
-export async function generateAddressProfile(address: string): Promise<any> {
-  const txHash = await client.writeContract({
-    address: contractAddress,
-    functionName: "vouch_address",
-    args: [address],
     value: 0n,
   });
   const receipt = await client.waitForTransactionReceipt({

@@ -5,8 +5,8 @@ import TrustBadge from "../components/TrustBadge";
 import GradeCard from "../components/GradeCard";
 import {
   readProfile,
+  readProfileByHandle,
   generateProfile,
-  generateAddressProfile,
   refreshProfile,
 } from "../lib/genlayer";
 import type { TrustProfile } from "../types";
@@ -24,7 +24,12 @@ export default function Profile() {
     if (!handle) return;
     setLoading(true);
     setError("");
-    readProfile(handle)
+
+    const fetchProfile = isAddress
+      ? readProfile(handle)
+      : readProfileByHandle(handle);
+
+    fetchProfile
       .then((p) => {
         if (p && p.overall) {
           setProfile(p);
@@ -34,16 +39,15 @@ export default function Profile() {
       })
       .catch(() => setProfile(null))
       .finally(() => setLoading(false));
-  }, [handle]);
+  }, [handle, isAddress]);
 
   const handleGenerate = async () => {
-    if (!handle) return;
+    if (!handle || isAddress) return;
     setGenerating(true);
     setError("");
     try {
-      const fn = isAddress ? generateAddressProfile : generateProfile;
-      await fn(handle);
-      const p = await readProfile(handle);
+      await generateProfile(handle);
+      const p = await readProfileByHandle(handle);
       if (p && p.overall) {
         setProfile(p);
       }
@@ -55,12 +59,12 @@ export default function Profile() {
   };
 
   const handleRefresh = async () => {
-    if (!handle) return;
+    if (!handle || isAddress) return;
     setGenerating(true);
     setError("");
     try {
       await refreshProfile(handle);
-      const p = await readProfile(handle);
+      const p = await readProfileByHandle(handle);
       if (p && p.overall) {
         setProfile(p);
       }
@@ -93,6 +97,11 @@ export default function Profile() {
               <div className="text-xs text-gray-400 mt-2 font-mono">
                 Sources: {profile.sources_scraped?.join(", ")}
               </div>
+              {profile.vouched_by && (
+                <div className="text-xs text-gray-400 mt-1 font-mono">
+                  Vouched by: {profile.vouched_by}
+                </div>
+              )}
             </div>
 
             <div className="grid md:grid-cols-2 gap-6 mb-8">
@@ -124,32 +133,42 @@ export default function Profile() {
               )}
             </div>
 
-            <div className="text-center">
-              <button
-                onClick={handleRefresh}
-                disabled={generating}
-                className="text-sm text-gray-500 hover:text-gray-700 underline"
-              >
-                {generating ? "Regenerating..." : "Refresh profile"}
-              </button>
-              {error && <p className="text-red-500 mt-2 text-sm">{error}</p>}
-            </div>
+            {!isAddress && (
+              <div className="text-center">
+                <button
+                  onClick={handleRefresh}
+                  disabled={generating}
+                  className="text-sm text-gray-500 hover:text-gray-700 underline"
+                >
+                  {generating ? "Regenerating..." : "Refresh profile"}
+                </button>
+                {error && <p className="text-red-500 mt-2 text-sm">{error}</p>}
+              </div>
+            )}
           </>
         ) : (
           <div className="text-center py-20">
             <h2 className="text-2xl font-bold text-gray-900 mb-2 font-mono">{handle}</h2>
-            <p className="text-gray-500 mb-6">No profile found. Generate one?</p>
-            <button
-              onClick={handleGenerate}
-              disabled={generating}
-              className="px-8 py-3 bg-gray-900 text-white rounded-lg font-medium
-                         hover:bg-gray-800 disabled:bg-gray-400 transition-colors"
-            >
-              {generating
-                ? "Generating... (this may take up to 60s)"
-                : "Generate Trust Profile"}
-            </button>
-            {error && <p className="text-red-500 mt-4 text-sm">{error}</p>}
+            {isAddress ? (
+              <p className="text-gray-500">
+                No profile found for this address. The owner must vouch their GitHub handle first.
+              </p>
+            ) : (
+              <>
+                <p className="text-gray-500 mb-6">No profile found. Generate one?</p>
+                <button
+                  onClick={handleGenerate}
+                  disabled={generating}
+                  className="px-8 py-3 bg-gray-900 text-white rounded-lg font-medium
+                             hover:bg-gray-800 disabled:bg-gray-400 transition-colors"
+                >
+                  {generating
+                    ? "Generating... (this may take up to 60s)"
+                    : "Generate Trust Profile"}
+                </button>
+                {error && <p className="text-red-500 mt-4 text-sm">{error}</p>}
+              </>
+            )}
           </div>
         )}
       </main>

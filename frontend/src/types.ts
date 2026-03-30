@@ -19,7 +19,7 @@ export interface OnchainActivity {
 export interface TrustProfile {
   handle: string;
   sources_scraped: string[];
-  generated_at: number;
+  vouched_by?: string;
   code_activity: CodeActivity;
   onchain_activity: OnchainActivity;
   overall: {

@@ -7,13 +7,9 @@ class MyContract(gl.Contract):
     vouch_address: str  # Set to deployed VouchProtocol address
 
     @gl.public.write
-    def do_something(self, user_handle: str):
-        # Check trust before allowing action
-        tier = gl.call_contract(
-            self.vouch_address,
-            "get_trust_tier",
-            [user_handle]
-        )
+    def do_something(self, user_address: str):
+        # One line to check trust before allowing action
+        tier = gl.ContractAt(self.vouch_address).get_trust_tier(user_address)
         if tier == "LOW" or tier == "UNKNOWN":
             raise Exception("User does not meet trust requirements")
         # Proceed with action...`;
@@ -23,17 +19,17 @@ import { testnetBradbury } from "genlayer-js/chains";
 
 const client = createClient({ chain: testnetBradbury });
 
-// Read trust tier (free, no gas)
+// Read trust tier by address (free, no gas)
 const tier = await client.readContract({
   address: "0x_VOUCH_CONTRACT_ADDRESS",
   functionName: "get_trust_tier",
-  args: ["torvalds"],
+  args: ["0x_RECIPIENT_ADDRESS"],
 });
 
-// Read full profile (free, no gas)
+// Read full profile by handle (free, no gas)
 const profile = await client.readContract({
   address: "0x_VOUCH_CONTRACT_ADDRESS",
-  functionName: "get_profile",
+  functionName: "get_profile_by_handle",
   args: ["torvalds"],
 });`;
 
@@ -41,17 +37,17 @@ const USE_CASES = [
   {
     app: "Rally",
     use: "Check creator trust before accepting campaign applications",
-    call: 'get_trust_tier(creator) -> reject if LOW/UNKNOWN',
+    call: 'get_trust_tier(creator_address) -> reject if LOW/UNKNOWN',
   },
   {
     app: "MergeProof",
     use: "Filter code reviewers by reputation",
-    call: 'get_profile(reviewer) -> check code_activity.grade',
+    call: 'get_profile(reviewer_address) -> check code_activity.grade',
   },
   {
     app: "Internet Court",
     use: "Weight party credibility in disputes",
-    call: 'get_profile(party) -> factor overall.trust_tier into verdict',
+    call: 'get_profile(party_address) -> factor overall.trust_tier into verdict',
   },
 ];
 
@@ -70,7 +66,7 @@ export default function Integrate() {
           <div className="space-y-4">
             <div className="border border-gray-200 rounded-lg p-4">
               <code className="text-sm font-mono text-blue-600">
-                get_trust_tier(handle: str) -&gt; str
+                get_trust_tier(address: str) -&gt; str
               </code>
               <p className="text-sm text-gray-500 mt-1">
                 Returns: TRUSTED | MODERATE | LOW | UNKNOWN
@@ -78,10 +74,26 @@ export default function Integrate() {
             </div>
             <div className="border border-gray-200 rounded-lg p-4">
               <code className="text-sm font-mono text-blue-600">
-                get_profile(handle: str) -&gt; str
+                get_profile(address: str) -&gt; str
               </code>
               <p className="text-sm text-gray-500 mt-1">
-                Returns: Full JSON profile with grades, reasoning, and data
+                Returns: Full JSON profile with grades, reasoning, and data (by address)
+              </p>
+            </div>
+            <div className="border border-gray-200 rounded-lg p-4">
+              <code className="text-sm font-mono text-blue-600">
+                get_profile_by_handle(handle: str) -&gt; str
+              </code>
+              <p className="text-sm text-gray-500 mt-1">
+                Returns: Full JSON profile resolved by GitHub handle
+              </p>
+            </div>
+            <div className="border border-gray-200 rounded-lg p-4">
+              <code className="text-sm font-mono text-blue-600">
+                lookup_address(handle: str) -&gt; str
+              </code>
+              <p className="text-sm text-gray-500 mt-1">
+                Returns: Wallet address associated with a GitHub handle
               </p>
             </div>
             <div className="border border-gray-200 rounded-lg p-4">
