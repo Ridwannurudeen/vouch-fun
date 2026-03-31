@@ -1,6 +1,9 @@
+import { Link } from "react-router-dom";
 import Header from "../components/Header";
 import SearchBar from "../components/SearchBar";
 import StatsBar from "../components/StatsBar";
+
+const SAMPLE_HANDLES = ["vbuterin", "gakonst", "ridwannurudeen"];
 
 export default function Home() {
   return (
@@ -17,6 +20,18 @@ export default function Home() {
             </p>
           </div>
           <SearchBar />
+          <div className="flex flex-wrap gap-2 justify-center">
+            <span className="text-xs text-gray-400">Try:</span>
+            {SAMPLE_HANDLES.map((h) => (
+              <Link
+                key={h}
+                to={`/profile/${h}`}
+                className="text-xs font-mono text-gray-500 hover:text-gray-900 underline"
+              >
+                {h}
+              </Link>
+            ))}
+          </div>
           <StatsBar />
         </div>
       </main>
