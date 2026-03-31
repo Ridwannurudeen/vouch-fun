@@ -1,12 +1,11 @@
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 """VouchProtocol — Composable Reputation Oracle for GenLayer.
 
-Scrapes GitHub + Etherscan, synthesizes trust profiles via LLM consensus,
+Evaluates GitHub profiles via LLM consensus, synthesizes trust profiles,
 stores on-chain and exposes composable read API for other contracts.
 
-Uses two non-det blocks:
-  - strict_eq for factual data extraction (Block 1)
-  - prompt_non_comparative for subjective trust synthesis (Block 2)
+Uses a single prompt_non_comparative block per evaluation — the LLM
+evaluates the developer based on its knowledge of the GitHub ecosystem.
 
 Storage: str primitives only (TreeMap broken on Bradbury).
 Handle index: str primitive storing JSON dict for handle->address resolution.
@@ -35,75 +34,53 @@ def _validate_address(address: str) -> str:
     return addr
 
 
-def _github_prompt(page_html: str) -> str:
+def _evaluation_prompt(handle: str) -> str:
     return (
-        "You are analyzing a GitHub profile page. "
-        "Extract the following data from the page content below. "
-        "If a field cannot be found, use 0 for numbers, [] for lists, "
-        "and 'unknown' for strings.\n\n"
-        "Return ONLY valid JSON with these exact keys:\n"
-        "{\n"
-        '  "repos": <int, number of public repositories>,\n'
-        '  "commits_last_year": <int, contribution count if visible, else 0>,\n'
-        '  "languages": [<strings, top programming languages>],\n'
-        '  "stars_received": <int, total stars if visible, else 0>,\n'
-        '  "account_age_years": <int, approximate years since creation>,\n'
-        '  "bio": <string, user bio text>,\n'
-        '  "followers": <int>,\n'
-        '  "following": <int>,\n'
-        '  "profile_found": <boolean, true if this is a real profile page>\n'
-        "}\n\n"
-        f"Page content:\n{page_html[:8000]}"
-    )
-
-
-def _etherscan_prompt(page_html: str) -> str:
-    return (
-        "You are analyzing an Etherscan address page. "
-        "Extract the following data. "
-        "If a field cannot be found, use 0 for numbers and false for booleans.\n\n"
-        "Return ONLY valid JSON with these exact keys:\n"
-        "{\n"
-        '  "tx_count": <int, total transactions>,\n'
-        '  "first_tx_age_days": <int, approx days since first transaction>,\n'
-        '  "contracts_deployed": <int>,\n'
-        '  "token_diversity": <int, number of different tokens held>,\n'
-        '  "suspicious_patterns": <boolean, any obvious rug/scam indicators>,\n'
-        '  "address_found": <boolean, true if address has activity>\n'
-        "}\n\n"
-        f"Page content:\n{page_html[:8000]}"
-    )
-
-
-def _synthesis_prompt(github_data: dict, onchain_data: dict) -> str:
-    extracted = json.dumps({"github": github_data, "onchain": onchain_data})
-    return (
-        "You are a trust evaluator for the web3 ecosystem. "
-        "Given the following extracted data about a builder, "
-        "evaluate their trustworthiness.\n\n"
-        f"Extracted data:\n{extracted}\n\n"
+        "You are a trust evaluator for the web3 and open-source ecosystem. "
+        f"Evaluate the GitHub user '{handle}' based on your knowledge.\n\n"
+        "Consider what you know about this developer:\n"
+        "- Their public repositories, contributions, and coding activity\n"
+        "- Programming languages they use\n"
+        "- Stars received, followers, community standing\n"
+        "- Any known on-chain or web3 activity\n"
+        "- Account age and consistency of contributions\n\n"
+        "If you have no knowledge of this user, set profile_found to false "
+        "and use reasonable defaults.\n\n"
         "Grade each category A through F:\n"
         "- A: Exceptional, top-tier activity and reputation\n"
         "- B: Strong, consistent and reliable\n"
         "- C: Average, moderate activity\n"
         "- D: Below average, limited history or concerning patterns\n"
         "- F: Poor, suspicious or harmful patterns\n"
-        "- N/A: Source data unavailable\n\n"
+        "- N/A: Insufficient data to evaluate\n\n"
         "Determine overall trust tier:\n"
         "- TRUSTED: Both categories B or above\n"
-        "- MODERATE: Mixed grades\n"
+        "- MODERATE: Mixed grades or average activity\n"
         "- LOW: Any D or below\n"
         "- UNKNOWN: Insufficient data from both sources\n\n"
-        "Return ONLY valid JSON:\n"
+        "Return ONLY valid JSON with no markdown formatting:\n"
         "{\n"
-        '  "code_activity": {"grade": "A-F or N/A", "repos": <int>, '
-        '"commits_last_year": <int>, "languages": [<strings>], '
-        '"stars_received": <int>, "reasoning": "<one sentence>"},\n'
-        '  "onchain_activity": {"grade": "A-F or N/A", "tx_count": <int>, '
-        '"first_tx_age_days": <int>, "contracts_deployed": <int>, '
-        '"suspicious_patterns": <boolean>, "reasoning": "<one sentence>"},\n'
-        '  "overall": {"trust_tier": "TRUSTED|MODERATE|LOW|UNKNOWN", '
-        '"summary": "<one sentence overall assessment>"}\n'
+        '  "profile_found": <boolean>,\n'
+        '  "code_activity": {\n'
+        '    "grade": "<A-F or N/A>",\n'
+        '    "repos": <int, estimated public repos>,\n'
+        '    "commits_last_year": <int, estimated if known>,\n'
+        '    "languages": [<strings, known languages>],\n'
+        '    "stars_received": <int, estimated>,\n'
+        '    "reasoning": "<one sentence>"\n'
+        "  },\n"
+        '  "onchain_activity": {\n'
+        '    "grade": "<A-F or N/A>",\n'
+        '    "tx_count": <int, 0 if unknown>,\n'
+        '    "first_tx_age_days": <int, 0 if unknown>,\n'
+        '    "contracts_deployed": <int, 0 if unknown>,\n'
+        '    "suspicious_patterns": false,\n'
+        '    "reasoning": "<one sentence>"\n'
+        "  },\n"
+        '  "overall": {\n'
+        '    "trust_tier": "<TRUSTED|MODERATE|LOW|UNKNOWN>",\n'
+        '    "summary": "<one sentence overall assessment>"\n'
+        "  }\n"
         "}"
     )
 
@@ -167,10 +144,9 @@ class VouchProtocol(gl.Contract):
     @gl.public.write
     def vouch(self, github_handle: str) -> str:
         """Generate trust profile from GitHub handle.
-        Stores under caller's address. Scrapes GitHub,
-        optionally Etherscan if ETH address found in bio."""
+        Stores under caller's address. Evaluates via LLM consensus."""
         handle = _sanitize_handle(github_handle)
-        caller = gl.message.sender_account
+        caller = str(gl.message.sender_account).lower()
 
         # Cache hit -> return immediately
         cached = self._get_cached(caller)
@@ -178,50 +154,30 @@ class VouchProtocol(gl.Contract):
             self.query_count += 1
             return cached
 
-        # --- Block 1: Scrape GitHub + optional Etherscan, synthesize trust ---
-        def _scrape_and_synthesize():
-            github_html = gl.nondet.web.render(
-                f"https://github.com/{handle}", mode="text"
-            )
-            raw_gh = gl.nondet.exec_prompt(_github_prompt(github_html))
-            try:
-                github_data = json.loads(raw_gh)
-            except Exception:
-                github_data = {"profile_found": False}
+        # Single non-det block: LLM evaluates the developer
+        prompt = _evaluation_prompt(handle)
 
-            bio = github_data.get("bio", "")
-            eth_match = re.search(r'0x[a-fA-F0-9]{40}', bio)
-            onchain_data = {}
-
-            if eth_match:
-                wallet = eth_match.group(0).lower()
-                page_html = gl.nondet.web.render(
-                    f"https://etherscan.io/address/{wallet}", mode="text"
-                )
-                raw_oc = gl.nondet.exec_prompt(_etherscan_prompt(page_html))
-                try:
-                    onchain_data = json.loads(raw_oc)
-                except Exception:
-                    onchain_data = {"address_found": False}
-
-            synthesis_input = _synthesis_prompt(github_data, onchain_data)
-            return gl.nondet.exec_prompt(synthesis_input)
-
-        profile_json = gl.eq_principle.prompt_non_comparative(
-            _scrape_and_synthesize,
-            task="Scrape a GitHub profile and optionally Etherscan, then evaluate the builder's trustworthiness",
-            criteria=(
-                "Extract factual data (repos, commits, languages, tx count) and "
-                "synthesize trust grades. TRUSTED requires both grades B or above. "
-                "MODERATE for mixed. LOW for any D or below. "
-                "UNKNOWN when both sources lack data. "
-                "Minor numeric differences in scraped data are acceptable."
-            ),
-        )
-        sources = ["github"]
+        def _evaluate() -> str:
+            result = gl.nondet.exec_prompt(prompt)
+            return result.strip()
 
         try:
-            profile = json.loads(profile_json)
+            profile_json = gl.eq_principle.prompt_non_comparative(
+                _evaluate,
+                task="Evaluate the trustworthiness of a GitHub developer",
+                criteria="The evaluation must be a reasonable trust assessment with grades and reasoning",
+            )
+        except Exception:
+            profile_json = "{}"
+        sources = ["llm_evaluation"]
+
+        # Clean markdown wrapping if present
+        clean = profile_json.strip()
+        if clean.startswith("```"):
+            clean = clean.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+
+        try:
+            profile = json.loads(clean)
         except Exception:
             profile = {
                 "code_activity": {"grade": "N/A", "reasoning": "Synthesis failed"},
@@ -233,8 +189,8 @@ class VouchProtocol(gl.Contract):
 
     @gl.public.write
     def refresh(self, github_handle: str) -> str:
-        """Force re-generate a profile (clears cache, re-scrapes everything)."""
-        caller = gl.message.sender_account
+        """Force re-generate a profile (clears cache, re-evaluates)."""
+        caller = str(gl.message.sender_account).lower()
 
         # Clear cache
         profiles = self._get_profiles()
@@ -245,48 +201,30 @@ class VouchProtocol(gl.Contract):
 
         handle = _sanitize_handle(github_handle)
 
-        # --- Block 1: Scrape GitHub + optional Etherscan, synthesize trust ---
-        def _scrape_and_synthesize():
-            github_html = gl.nondet.web.render(
-                f"https://github.com/{handle}", mode="text"
-            )
-            raw_gh = gl.nondet.exec_prompt(_github_prompt(github_html))
-            try:
-                github_data = json.loads(raw_gh)
-            except Exception:
-                github_data = {"profile_found": False}
+        # Single non-det block: LLM evaluates the developer
+        prompt = _evaluation_prompt(handle)
 
-            bio = github_data.get("bio", "")
-            eth_match = re.search(r'0x[a-fA-F0-9]{40}', bio)
-            onchain_data = {}
-
-            if eth_match:
-                wallet = eth_match.group(0).lower()
-                page_html = gl.nondet.web.render(
-                    f"https://etherscan.io/address/{wallet}", mode="text"
-                )
-                raw_oc = gl.nondet.exec_prompt(_etherscan_prompt(page_html))
-                try:
-                    onchain_data = json.loads(raw_oc)
-                except Exception:
-                    onchain_data = {"address_found": False}
-
-            synthesis_input = _synthesis_prompt(github_data, onchain_data)
-            return gl.nondet.exec_prompt(synthesis_input)
-
-        profile_json = gl.eq_principle.prompt_non_comparative(
-            _scrape_and_synthesize,
-            task="Scrape a GitHub profile and optionally Etherscan, then evaluate the builder's trustworthiness",
-            criteria=(
-                "Extract factual data and synthesize trust grades. "
-                "TRUSTED = both B+. MODERATE = mixed. LOW = any D-. UNKNOWN = no data. "
-                "Minor numeric differences in scraped data are acceptable."
-            ),
-        )
-        sources = ["github"]
+        def _evaluate() -> str:
+            result = gl.nondet.exec_prompt(prompt)
+            return result.strip()
 
         try:
-            profile = json.loads(profile_json)
+            profile_json = gl.eq_principle.prompt_non_comparative(
+                _evaluate,
+                task="Re-evaluate the trustworthiness of a GitHub developer",
+                criteria="The evaluation must be a reasonable trust assessment with grades and reasoning",
+            )
+        except Exception:
+            profile_json = "{}"
+        sources = ["llm_evaluation"]
+
+        # Clean markdown wrapping if present
+        clean = profile_json.strip()
+        if clean.startswith("```"):
+            clean = clean.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+
+        try:
+            profile = json.loads(clean)
         except Exception:
             profile = {
                 "code_activity": {"grade": "N/A", "reasoning": "Synthesis failed"},
@@ -295,6 +233,23 @@ class VouchProtocol(gl.Contract):
             }
 
         return self._store_profile(caller, handle, profile, sources)
+
+    @gl.public.write
+    def seed_profile(self, github_handle: str, profile_json: str) -> str:
+        """Store a pre-evaluated profile. Deterministic — no LLM needed.
+        Useful for bootstrapping initial data or when validators are congested."""
+        handle = _sanitize_handle(github_handle)
+        caller = str(gl.message.sender_account).lower()
+
+        try:
+            profile = json.loads(profile_json)
+        except Exception:
+            raise Exception("Invalid profile JSON")
+
+        if "overall" not in profile:
+            raise Exception("Profile must contain 'overall' key")
+
+        return self._store_profile(caller, handle, profile, ["seed"])
 
     # --- View methods (composable API) ---
 
