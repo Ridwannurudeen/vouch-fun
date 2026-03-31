@@ -98,17 +98,22 @@ class VouchProtocol(gl.Contract):
         self.query_count = 0
         self.profiles_data = "{}"
         self.handle_index = "{}"
+        self._seed()
 
     def _seed(self):
-        a1 = "0x0000000000000000000000000000000000000001"
-        a2 = "0x0000000000000000000000000000000000000002"
-        a3 = "0x0000000000000000000000000000000000000003"
-        self.handle_index = '{"vbuterin":"' + a1 + '","gakonst":"' + a2 + '","ridwannurudeen":"' + a3 + '"}'
-        p1 = '{"handle":"vbuterin","sources_scraped":["seed"],"vouched_by":"' + a1 + '","code_activity":{"grade":"A","repos":191,"commits_last_year":520,"languages":["Python","Solidity","JavaScript"],"stars_received":45000,"reasoning":"Creator of Ethereum"},"onchain_activity":{"grade":"A","tx_count":8500,"first_tx_age_days":3200,"contracts_deployed":50,"suspicious_patterns":false,"reasoning":"On-chain since genesis"},"overall":{"trust_tier":"TRUSTED","summary":"Ethereum co-founder"}}'
-        p2 = '{"handle":"gakonst","sources_scraped":["seed"],"vouched_by":"' + a2 + '","code_activity":{"grade":"A","repos":120,"commits_last_year":380,"languages":["Rust","Solidity","TypeScript"],"stars_received":15000,"reasoning":"Paradigm CTO, built Foundry"},"onchain_activity":{"grade":"A","tx_count":3200,"first_tx_age_days":2100,"contracts_deployed":30,"suspicious_patterns":false,"reasoning":"Active DeFi contributor"},"overall":{"trust_tier":"TRUSTED","summary":"Paradigm CTO, Foundry builder"}}'
-        p3 = '{"handle":"ridwannurudeen","sources_scraped":["seed"],"vouched_by":"' + a3 + '","code_activity":{"grade":"B","repos":35,"commits_last_year":280,"languages":["Rust","Python","TypeScript","Solidity"],"stars_received":50,"reasoning":"Multi-chain contributor"},"onchain_activity":{"grade":"B","tx_count":450,"first_tx_age_days":800,"contracts_deployed":12,"suspicious_patterns":false,"reasoning":"Consistent on-chain activity"},"overall":{"trust_tier":"TRUSTED","summary":"Multi-chain developer"}}'
-        self.profiles_data = '{"' + a1 + '":' + json.dumps(p1) + ',"' + a2 + '":' + json.dumps(p2) + ',"' + a3 + '":' + json.dumps(p3) + '}'
-        self.profile_count = 3
+        a = "0x0000000000000000000000000000000000000001"
+        p = {"handle": "vbuterin", "sources_scraped": ["seed"], "vouched_by": a,
+             "code_activity": {"grade": "A", "repos": 191, "commits_last_year": 520,
+                "languages": ["Python", "Solidity", "JS"], "stars_received": 45000,
+                "reasoning": "Ethereum creator"},
+             "onchain_activity": {"grade": "A", "tx_count": 8500, "first_tx_age_days": 3200,
+                "contracts_deployed": 50, "suspicious_patterns": False,
+                "reasoning": "On-chain since genesis"},
+             "overall": {"trust_tier": "TRUSTED", "summary": "Ethereum co-founder"}}
+        profiles = {a: json.dumps(p)}
+        self.profiles_data = json.dumps(profiles)
+        self.handle_index = json.dumps({"vbuterin": a})
+        self.profile_count = 1
 
     # --- Internal helpers ---
 
