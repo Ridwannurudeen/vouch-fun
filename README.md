@@ -93,6 +93,12 @@ Use cases:
 - **Frontend:** React + TypeScript + Vite + Tailwind CSS
 - **SDK:** genlayer-js 0.23.1
 
+## Deployed Contract (Bradbury Testnet)
+
+| Contract | Address |
+|----------|---------|
+| VouchProtocol | `0x3F32FeD0eC4A1D34C81316DE8773674cBB4ea507` |
+
 ## Local Development
 
 ```bash
