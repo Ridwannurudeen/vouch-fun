@@ -3,13 +3,16 @@ import { testnetBradbury } from "genlayer-js/chains";
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "";
 
-// Ephemeral account — acceptable for hackathon demo
-const account = createAccount();
+// Funded demo account for write operations (testnet only — tokens have no value)
+const DEMO_KEY = import.meta.env.VITE_DEMO_PRIVATE_KEY || "";
+const account = DEMO_KEY ? createAccount(DEMO_KEY) : createAccount();
 
 export const client = createClient({
   chain: testnetBradbury,
   account,
 });
+
+export const hasFundedAccount = !!DEMO_KEY;
 
 export const contractAddress = CONTRACT_ADDRESS as `0x${string}`;
 

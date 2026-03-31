@@ -178,60 +178,47 @@ class VouchProtocol(gl.Contract):
             self.query_count += 1
             return cached
 
-        # --- Block 1a: Extract GitHub data (strict_eq) ---
-        def _extract_github():
+        # --- Block 1: Scrape GitHub + optional Etherscan, synthesize trust ---
+        def _scrape_and_synthesize():
             github_html = gl.nondet.web.render(
                 f"https://github.com/{handle}", mode="text"
             )
-            raw = gl.nondet.exec_prompt(_github_prompt(github_html))
+            raw_gh = gl.nondet.exec_prompt(_github_prompt(github_html))
             try:
-                return json.dumps(json.loads(raw))
+                github_data = json.loads(raw_gh)
             except Exception:
-                return json.dumps({"profile_found": False})
+                github_data = {"profile_found": False}
 
-        github_json = gl.eq_principle.strict_eq(_extract_github)
-        github_data = json.loads(github_json)
+            bio = github_data.get("bio", "")
+            eth_match = re.search(r'0x[a-fA-F0-9]{40}', bio)
+            onchain_data = {}
 
-        # Check bio for ETH address -> optional on-chain lookup
-        bio = github_data.get("bio", "")
-        eth_match = re.search(r'0x[a-fA-F0-9]{40}', bio)
-        onchain_data = {}
-        sources = ["github"]
-
-        if eth_match:
-            wallet = eth_match.group(0).lower()
-
-            # --- Block 1b: Extract Etherscan data (strict_eq) ---
-            def _extract_onchain():
+            if eth_match:
+                wallet = eth_match.group(0).lower()
                 page_html = gl.nondet.web.render(
                     f"https://etherscan.io/address/{wallet}", mode="text"
                 )
-                raw = gl.nondet.exec_prompt(_etherscan_prompt(page_html))
+                raw_oc = gl.nondet.exec_prompt(_etherscan_prompt(page_html))
                 try:
-                    return json.dumps(json.loads(raw))
+                    onchain_data = json.loads(raw_oc)
                 except Exception:
-                    return json.dumps({"address_found": False})
+                    onchain_data = {"address_found": False}
 
-            onchain_json = gl.eq_principle.strict_eq(_extract_onchain)
-            onchain_data = json.loads(onchain_json)
-            sources.append("etherscan")
-
-        # --- Block 2: Synthesize trust profile (prompt_non_comparative) ---
-        synthesis_input = _synthesis_prompt(github_data, onchain_data)
-
-        def _synthesize():
+            synthesis_input = _synthesis_prompt(github_data, onchain_data)
             return gl.nondet.exec_prompt(synthesis_input)
 
         profile_json = gl.eq_principle.prompt_non_comparative(
-            _synthesize,
-            task="Evaluate a web3 builder's trustworthiness based on GitHub and on-chain data",
+            _scrape_and_synthesize,
+            task="Scrape a GitHub profile and optionally Etherscan, then evaluate the builder's trustworthiness",
             criteria=(
-                "Grades reflect activity level, consistency, and absence of "
-                "suspicious patterns. TRUSTED requires both grades B or above. "
+                "Extract factual data (repos, commits, languages, tx count) and "
+                "synthesize trust grades. TRUSTED requires both grades B or above. "
                 "MODERATE for mixed. LOW for any D or below. "
-                "UNKNOWN when both sources lack data."
+                "UNKNOWN when both sources lack data. "
+                "Minor numeric differences in scraped data are acceptable."
             ),
         )
+        sources = ["github"]
 
         try:
             profile = json.loads(profile_json)
@@ -258,55 +245,45 @@ class VouchProtocol(gl.Contract):
 
         handle = _sanitize_handle(github_handle)
 
-        # --- Block 1a: Extract GitHub data ---
-        def _extract_github():
+        # --- Block 1: Scrape GitHub + optional Etherscan, synthesize trust ---
+        def _scrape_and_synthesize():
             github_html = gl.nondet.web.render(
                 f"https://github.com/{handle}", mode="text"
             )
-            raw = gl.nondet.exec_prompt(_github_prompt(github_html))
+            raw_gh = gl.nondet.exec_prompt(_github_prompt(github_html))
             try:
-                return json.dumps(json.loads(raw))
+                github_data = json.loads(raw_gh)
             except Exception:
-                return json.dumps({"profile_found": False})
+                github_data = {"profile_found": False}
 
-        github_json = gl.eq_principle.strict_eq(_extract_github)
-        github_data = json.loads(github_json)
+            bio = github_data.get("bio", "")
+            eth_match = re.search(r'0x[a-fA-F0-9]{40}', bio)
+            onchain_data = {}
 
-        bio = github_data.get("bio", "")
-        eth_match = re.search(r'0x[a-fA-F0-9]{40}', bio)
-        onchain_data = {}
-        sources = ["github"]
-
-        if eth_match:
-            wallet = eth_match.group(0).lower()
-
-            def _extract_onchain():
+            if eth_match:
+                wallet = eth_match.group(0).lower()
                 page_html = gl.nondet.web.render(
                     f"https://etherscan.io/address/{wallet}", mode="text"
                 )
-                raw = gl.nondet.exec_prompt(_etherscan_prompt(page_html))
+                raw_oc = gl.nondet.exec_prompt(_etherscan_prompt(page_html))
                 try:
-                    return json.dumps(json.loads(raw))
+                    onchain_data = json.loads(raw_oc)
                 except Exception:
-                    return json.dumps({"address_found": False})
+                    onchain_data = {"address_found": False}
 
-            onchain_json = gl.eq_principle.strict_eq(_extract_onchain)
-            onchain_data = json.loads(onchain_json)
-            sources.append("etherscan")
-
-        synthesis_input = _synthesis_prompt(github_data, onchain_data)
-
-        def _synthesize():
+            synthesis_input = _synthesis_prompt(github_data, onchain_data)
             return gl.nondet.exec_prompt(synthesis_input)
 
         profile_json = gl.eq_principle.prompt_non_comparative(
-            _synthesize,
-            task="Evaluate web3 builder trustworthiness from GitHub and on-chain data",
+            _scrape_and_synthesize,
+            task="Scrape a GitHub profile and optionally Etherscan, then evaluate the builder's trustworthiness",
             criteria=(
-                "Grades reflect activity, consistency, absence of suspicious patterns. "
-                "TRUSTED = both B+. MODERATE = mixed. LOW = any D-. UNKNOWN = no data."
+                "Extract factual data and synthesize trust grades. "
+                "TRUSTED = both B+. MODERATE = mixed. LOW = any D-. UNKNOWN = no data. "
+                "Minor numeric differences in scraped data are acceptable."
             ),
         )
+        sources = ["github"]
 
         try:
             profile = json.loads(profile_json)

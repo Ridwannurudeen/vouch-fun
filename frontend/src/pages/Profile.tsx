@@ -8,6 +8,7 @@ import {
   readProfileByHandle,
   generateProfile,
   refreshProfile,
+  hasFundedAccount,
 } from "../lib/genlayer";
 import type { TrustProfile } from "../types";
 
@@ -158,14 +159,25 @@ export default function Profile() {
                 <p className="text-gray-500 mb-6">No profile found. Generate one?</p>
                 <button
                   onClick={handleGenerate}
-                  disabled={generating}
+                  disabled={generating || !hasFundedAccount}
                   className="px-8 py-3 bg-gray-900 text-white rounded-lg font-medium
                              hover:bg-gray-800 disabled:bg-gray-400 transition-colors"
                 >
                   {generating
-                    ? "Generating... (this may take up to 60s)"
+                    ? "Generating... (validators scraping GitHub, ~60-120s)"
                     : "Generate Trust Profile"}
                 </button>
+                {generating && (
+                  <p className="text-gray-400 mt-3 text-sm">
+                    Validators are scraping GitHub and running AI analysis.
+                    This requires on-chain consensus and may take 1-2 minutes.
+                  </p>
+                )}
+                {!hasFundedAccount && !generating && (
+                  <p className="text-amber-600 mt-3 text-sm">
+                    Demo wallet not configured. Profile generation requires GEN tokens for gas.
+                  </p>
+                )}
                 {error && <p className="text-red-500 mt-4 text-sm">{error}</p>}
               </>
             )}
