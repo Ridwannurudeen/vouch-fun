@@ -97,6 +97,11 @@ export default function Profile() {
               </p>
               <div className="text-xs text-gray-400 mt-2 font-mono">
                 Sources: {profile.sources_scraped?.join(", ")}
+                {profile.sources_scraped?.includes("seed") && (
+                  <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs">
+                    Seeded Profile
+                  </span>
+                )}
               </div>
               {profile.vouched_by && (
                 <div className="text-xs text-gray-400 mt-1 font-mono">
@@ -164,13 +169,13 @@ export default function Profile() {
                              hover:bg-gray-800 disabled:bg-gray-400 transition-colors"
                 >
                   {generating
-                    ? "Generating... (validators scraping GitHub, ~60-120s)"
+                    ? "Generating... (validators evaluating via LLM consensus, ~60-120s)"
                     : "Generate Trust Profile"}
                 </button>
                 {generating && (
                   <p className="text-gray-400 mt-3 text-sm">
-                    Validators are scraping GitHub and running AI analysis.
-                    This requires on-chain consensus and may take 1-2 minutes.
+                    Validators are evaluating this developer via LLM consensus.
+                    This requires on-chain agreement and may take 1-2 minutes.
                   </p>
                 )}
                 {!hasFundedAccount && !generating && (

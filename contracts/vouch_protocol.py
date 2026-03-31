@@ -98,6 +98,34 @@ class VouchProtocol(gl.Contract):
         self.query_count = 0
         self.profiles_data = "{}"
         self.handle_index = "{}"
+        self._seed()
+
+    def _seed(self):
+        seeds = [
+            ("vbuterin", "0x0000000000000000000000000000000000000001", {
+                "code_activity": {"grade": "A", "repos": 191, "commits_last_year": 520, "languages": ["Python", "Solidity", "JavaScript"], "stars_received": 45000, "reasoning": "Creator of Ethereum with mass open-source impact"},
+                "onchain_activity": {"grade": "A", "tx_count": 8500, "first_tx_age_days": 3200, "contracts_deployed": 50, "suspicious_patterns": False, "reasoning": "Prolific on-chain presence since genesis"},
+                "overall": {"trust_tier": "TRUSTED", "summary": "Ethereum co-founder, top-tier developer and thought leader"}}),
+            ("gakonst", "0x0000000000000000000000000000000000000002", {
+                "code_activity": {"grade": "A", "repos": 120, "commits_last_year": 380, "languages": ["Rust", "Solidity", "TypeScript"], "stars_received": 15000, "reasoning": "Paradigm CTO, built Foundry and ethers-rs"},
+                "onchain_activity": {"grade": "A", "tx_count": 3200, "first_tx_age_days": 2100, "contracts_deployed": 30, "suspicious_patterns": False, "reasoning": "Active DeFi contributor with clean history"},
+                "overall": {"trust_tier": "TRUSTED", "summary": "Paradigm CTO, prolific Ethereum tooling builder"}}),
+            ("ridwannurudeen", "0x0000000000000000000000000000000000000003", {
+                "code_activity": {"grade": "B", "repos": 35, "commits_last_year": 280, "languages": ["Rust", "Python", "TypeScript", "Solidity"], "stars_received": 50, "reasoning": "Active contributor to multiple blockchain ecosystems"},
+                "onchain_activity": {"grade": "B", "tx_count": 450, "first_tx_age_days": 800, "contracts_deployed": 12, "suspicious_patterns": False, "reasoning": "Consistent on-chain activity across chains"},
+                "overall": {"trust_tier": "TRUSTED", "summary": "Multi-chain developer with consistent contributions"}}),
+        ]
+        profiles = {}
+        index = {}
+        for handle, addr, profile in seeds:
+            profile["handle"] = handle
+            profile["sources_scraped"] = ["seed"]
+            profile["vouched_by"] = addr
+            profiles[addr] = json.dumps(profile)
+            index[handle] = addr
+            self.profile_count += 1
+        self.profiles_data = json.dumps(profiles)
+        self.handle_index = json.dumps(index)
 
     # --- Internal helpers ---
 
