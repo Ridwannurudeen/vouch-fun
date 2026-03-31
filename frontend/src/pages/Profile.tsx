@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import Header from "../components/Header";
 import TrustBadge from "../components/TrustBadge";
 import GradeCard from "../components/GradeCard";
+import GradeBar from "../components/GradeBar";
+import ConsensusAnimation from "../components/ConsensusAnimation";
+import DisputeModal from "../components/DisputeModal";
 import {
   readProfile,
   readProfileByHandle,
@@ -18,6 +21,8 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
+  const [showDispute, setShowDispute] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const isAddress = handle?.startsWith("0x") && handle.length === 42;
 
@@ -76,6 +81,12 @@ export default function Profile() {
     }
   };
 
+  const handleCopyUrl = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const code = profile?.code_activity;
   const onchain = profile?.onchain_activity;
 
@@ -92,6 +103,17 @@ export default function Profile() {
                 {profile.handle}
               </h1>
               <TrustBadge tier={profile.overall.trust_tier} />
+
+              {/* Verified badge */}
+              <div className="mt-2">
+                <span className="inline-flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Verified by AI Consensus
+                </span>
+              </div>
+
               <p className="text-gray-600 mt-3 max-w-lg mx-auto">
                 {profile.overall.summary}
               </p>
@@ -108,7 +130,47 @@ export default function Profile() {
                   Vouched by: {profile.vouched_by}
                 </div>
               )}
+
+              {/* Action buttons */}
+              <div className="flex justify-center gap-3 mt-4">
+                <button
+                  onClick={handleCopyUrl}
+                  className="text-xs px-3 py-1.5 border border-gray-200 rounded-lg
+                             hover:bg-gray-50 text-gray-500 transition-colors"
+                >
+                  {copied ? "Copied!" : "Share"}
+                </button>
+                {!isAddress && (
+                  <Link
+                    to={`/compare/${handle}`}
+                    className="text-xs px-3 py-1.5 border border-gray-200 rounded-lg
+                               hover:bg-gray-50 text-gray-500 transition-colors"
+                  >
+                    Compare with...
+                  </Link>
+                )}
+                {!isAddress && (
+                  <button
+                    onClick={() => setShowDispute(true)}
+                    className="text-xs px-3 py-1.5 border border-red-200 rounded-lg
+                               hover:bg-red-50 text-red-500 transition-colors"
+                  >
+                    Challenge This Score
+                  </button>
+                )}
+              </div>
             </div>
+
+            {/* Grade bars */}
+            {code && onchain && (
+              <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
+                <h3 className="text-sm font-semibold text-gray-900 mb-4">Grade Overview</h3>
+                <div className="space-y-3">
+                  <GradeBar label="Code" grade={code.grade} />
+                  <GradeBar label="On-chain" grade={onchain.grade} />
+                </div>
+              </div>
+            )}
 
             <div className="grid md:grid-cols-2 gap-6 mb-8">
               {code && (
@@ -151,6 +213,21 @@ export default function Profile() {
                 {error && <p className="text-red-500 mt-2 text-sm">{error}</p>}
               </div>
             )}
+
+            {/* Dispute modal */}
+            {handle && (
+              <DisputeModal
+                handle={handle}
+                isOpen={showDispute}
+                onClose={() => setShowDispute(false)}
+                onDisputed={() => {
+                  // Reload profile after dispute
+                  readProfileByHandle(handle).then((p) => {
+                    if (p && p.overall) setProfile(p);
+                  });
+                }}
+              />
+            )}
           </>
         ) : (
           <div className="text-center py-20">
@@ -162,22 +239,20 @@ export default function Profile() {
             ) : (
               <>
                 <p className="text-gray-500 mb-6">No profile found. Generate one?</p>
-                <button
-                  onClick={handleGenerate}
-                  disabled={generating || !hasFundedAccount}
-                  className="px-8 py-3 bg-gray-900 text-white rounded-lg font-medium
-                             hover:bg-gray-800 disabled:bg-gray-400 transition-colors"
-                >
-                  {generating
-                    ? "Generating... (validators evaluating via LLM consensus, ~60-120s)"
-                    : "Generate Trust Profile"}
-                </button>
-                {generating && (
-                  <p className="text-gray-400 mt-3 text-sm">
-                    Validators are evaluating this developer via LLM consensus.
-                    This requires on-chain agreement and may take 1-2 minutes.
-                  </p>
+
+                {generating ? (
+                  <ConsensusAnimation />
+                ) : (
+                  <button
+                    onClick={handleGenerate}
+                    disabled={!hasFundedAccount}
+                    className="px-8 py-3 bg-gray-900 text-white rounded-lg font-medium
+                               hover:bg-gray-800 disabled:bg-gray-400 transition-colors"
+                  >
+                    Generate Trust Profile
+                  </button>
                 )}
+
                 {!hasFundedAccount && !generating && (
                   <p className="text-amber-600 mt-3 text-sm">
                     Demo wallet not configured. Profile generation requires GEN tokens for gas.

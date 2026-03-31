@@ -26,4 +26,14 @@ export interface TrustProfile {
     trust_tier: "TRUSTED" | "MODERATE" | "LOW" | "UNKNOWN";
     summary: string;
   };
+  disputed?: boolean;
+  dispute_reason?: string;
+}
+
+export interface Comparison {
+  handle_a: string;
+  handle_b: string;
+  summary: string;
+  winner: string;
+  reasoning: string;
 }
