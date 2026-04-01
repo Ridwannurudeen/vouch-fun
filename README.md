@@ -10,19 +10,25 @@ Multi-dimensional trust synthesis via decentralized AI consensus. 5 independent 
 
 ## Why vouch.fun?
 
-Trust in the agentic economy is binary (KYC or nothing) and siloed (GitHub doesn't talk to on-chain doesn't talk to social). There is no composable primitive for multi-dimensional trust.
+In the agentic economy, autonomous agents hire each other, delegate tasks, and transact on behalf of users. Before any interaction, an agent needs to answer: **"Can I trust this entity?"**
 
-APIs give you numbers. Gitcoin Passport gives you a boolean. DegenScore gives you a single axis. None of them answer the actual question: **"How trustworthy is this entity?"**
+That question has no good answer today. Trust is binary (KYC or nothing) and siloed (GitHub doesn't talk to on-chain doesn't talk to social). An agent marketplace can't check whether a candidate has real code skills. A DeFi protocol can't verify a user's governance participation. A DAO can't weight votes by on-chain reputation.
 
-That question is subjective. It requires intelligence, not an API call.
+APIs give you numbers. Gitcoin Passport gives you a boolean. DegenScore gives you a single axis. None of them answer the subjective question agents actually need answered: **"How trustworthy is this entity, across what dimensions, and how confident are we?"**
 
-vouch.fun synthesizes judgment across 6 dimensions via AI consensus. We are honest about what this means:
+vouch.fun is the trust layer that agents and contracts query before acting:
+
+- **Agent hires auditor** --- `get_dimension(addr, "code")` returns grade + confidence. Only B+ code grade with high confidence gets the contract.
+- **Protocol gates access** --- `get_dimension(addr, "defi")` checks DeFi experience before allowing large swaps.
+- **DAO weights votes** --- `get_dimension(addr, "governance")` scales voting power by participation history.
+
+We are honest about what this means:
 
 - We **synthesize**, not verify. 5 independent LLMs evaluate an identifier and reach consensus through GenLayer's Equivalence Principle.
-- Every assessment includes a **confidence level** --- high, medium, low, or none --- so consumers know exactly how much weight to give each dimension.
-- Profiles are **composable on-chain** --- any contract queries the specific dimension it cares about with a single view call.
+- Every assessment includes a **confidence level** --- high, medium, low, or none --- so agents know exactly how much weight to give each dimension.
+- Profiles are **composable on-chain** --- any agent or contract queries the specific dimension it cares about with a single view call.
 
-The result is a new category of reputation infrastructure: not an oracle, not an identity system, but a **trust judgment protocol**.
+The result is trust infrastructure for the agentic economy: not an oracle, not an identity system, but a **trust judgment protocol** that any autonomous agent can query in one line.
 
 ---
 
@@ -310,8 +316,8 @@ Every profile stores its provenance:
 
 | Contract | Address | Description |
 |----------|---------|-------------|
-| VouchProtocol | `0x...` (Bradbury) | Core trust synthesis oracle --- 6 dimensions, 3 seed profiles |
-| TrustGate | `0x...` (Bradbury) | Dimension-gated registration consumer (composability demo) |
+| VouchProtocol | `0x3F32FeD0eC4A1D34C81316DE8773674cBB4ea507` (Bradbury) | Core trust synthesis oracle --- 6 dimensions, 3 seed profiles |
+| TrustGate | Pending deploy (Bradbury validators recovering) | Dimension-gated registration consumer (composability demo) |
 | Frontend | https://vouch.gudman.xyz | Live web application |
 
 ---

@@ -48,8 +48,9 @@ export default function Home() {
             <h1 className="text-5xl font-bold text-gray-900 mb-3">vouch.fun</h1>
             <p className="text-xl text-gray-500">The Trust Layer for the Agentic Economy</p>
             <p className="text-sm text-gray-400 mt-2 max-w-lg mx-auto">
-              6-dimension trust synthesis from code, on-chain, social, governance, DeFi, and identity signals.
-              Evaluated by 5 independent validators via Optimistic Democracy consensus.
+              Before agents transact, they need to trust each other.
+              vouch.fun synthesizes 6-dimension trust profiles via decentralized AI consensus —
+              so any agent or contract can verify who they're dealing with.
             </p>
           </div>
           <SearchBar />
@@ -68,14 +69,37 @@ export default function Home() {
           <StatsBar />
         </div>
 
-        {/* 6 Dimensions teaser */}
+        {/* Agent use cases */}
         <div className="py-12 border-t border-gray-100">
           <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
-            6 Dimensions of Trust
+            Why Agents Need Trust
           </h2>
           <p className="text-sm text-gray-400 text-center mb-8 max-w-lg mx-auto">
-            Each profile is synthesized across code, on-chain, social, governance, DeFi, and identity
-            signals with A-F grades and confidence levels.
+            In the agentic economy, autonomous agents hire, transact, and delegate to each other.
+            Before any interaction, they need to answer: "Can I trust this entity?"
+            vouch.fun provides the answer across 6 dimensions.
+          </p>
+          <div className="grid md:grid-cols-3 gap-4 max-w-3xl mx-auto mb-10">
+            {[
+              { title: "Agent hires auditor", desc: 'Check code dimension: get_dimension(addr, "code") — only agents with B+ grade can audit', icon: "M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" },
+              { title: "Protocol gates access", desc: 'Check DeFi dimension: get_dimension(addr, "defi") — require proven DeFi experience before large swaps', icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
+              { title: "DAO weights votes", desc: 'Check governance dimension: get_dimension(addr, "governance") — scale voting power by participation', icon: "M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" },
+            ].map((uc) => (
+              <div key={uc.title} className="border border-gray-100 rounded-xl p-4 hover:border-indigo-200 transition-colors">
+                <svg className="w-6 h-6 text-indigo-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d={uc.icon} />
+                </svg>
+                <h3 className="font-bold text-gray-900 text-sm mb-1">{uc.title}</h3>
+                <p className="text-xs text-gray-400">{uc.desc}</p>
+              </div>
+            ))}
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 text-center mb-2">
+            6 Dimensions of Trust
+          </h3>
+          <p className="text-sm text-gray-400 text-center mb-8 max-w-lg mx-auto">
+            Each profile is graded across code, on-chain, social, governance, DeFi, and identity
+            with A-F grades and confidence levels.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
             {[
@@ -178,8 +202,8 @@ export default function Home() {
             Composable by Design
           </h2>
           <p className="text-sm text-gray-500 text-center max-w-lg mx-auto mb-8">
-            Any GenLayer contract can query trust dimensions in a single view call.
-            Gate actions by code grade, DeFi experience, or overall trust tier.
+            Any agent or contract queries trust dimensions in a single view call.
+            Gate agent registration by code grade, protocol access by DeFi experience, or voting power by governance participation.
           </p>
           <div className="bg-gray-900 text-gray-100 rounded-xl p-6 text-sm overflow-x-auto font-mono max-w-2xl mx-auto">
             <span className="text-gray-500"># From any Intelligent Contract:</span>{"\n"}
