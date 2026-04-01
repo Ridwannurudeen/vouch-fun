@@ -1,6 +1,99 @@
 @import url('https://rsms.me/inter/inter.css');
 @import "tailwindcss";
 
+@theme {
+  /* Nano Banana palette */
+  --color-void: #050505;
+  --color-void-light: #0a0a12;
+  --color-glass: rgba(255, 255, 255, 0.04);
+  --color-glass-hover: rgba(255, 255, 255, 0.07);
+  --color-glass-border: rgba(255, 255, 255, 0.08);
+  --color-glass-border-hover: rgba(255, 255, 255, 0.15);
+  --color-accent: #818cf8;
+  --color-accent-bright: #a5b4fc;
+  --color-accent-dim: rgba(129, 140, 248, 0.15);
+  --color-nebula-indigo: rgba(79, 70, 229, 0.12);
+  --color-nebula-violet: rgba(139, 92, 246, 0.08);
+  --color-nebula-cyan: rgba(34, 211, 238, 0.05);
+
+  /* Tokyo Night code palette */
+  --color-tn-bg: #1a1b26;
+  --color-tn-comment: #565f89;
+  --color-tn-string: #9ece6a;
+  --color-tn-keyword: #bb9af7;
+  --color-tn-fn: #7aa2f7;
+  --color-tn-var: #c0caf5;
+  --color-tn-punct: #89ddff;
+  --color-tn-const: #ff9e64;
+
+  /* Animations */
+  --animate-nebula-drift: nebula-drift 25s ease-in-out infinite;
+  --animate-nebula-drift-2: nebula-drift-2 30s ease-in-out infinite;
+  --animate-pulse-glow: pulse-glow 3s ease-in-out infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-score-fill: score-fill 1.5s ease-out forwards;
+}
+
 body {
   font-family: "Inter", system-ui, -apple-system, sans-serif;
 }
+
+/* Keyframes */
+@keyframes nebula-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+@keyframes nebula-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-25px, 20px) scale(0.97); }
+  66% { transform: translate(15px, -25px) scale(1.03); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes score-fill {
+  from { stroke-dashoffset: var(--score-circumference); }
+  to { stroke-dashoffset: var(--score-offset); }
+}
+
+/* Glassmorphism base */
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-hover:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Command center search glow */
+.search-glow:focus-within {
+  box-shadow: 0 0 60px rgba(99, 102, 241, 0.12), 0 0 20px rgba(99, 102, 241, 0.08);
+  border-color: rgba(129, 140, 248, 0.4);
+}
+
+/* Grid lines background */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* Scrollbar styling for dark sections */
+.dark-scroll::-webkit-scrollbar { height: 4px; }
+.dark-scroll::-webkit-scrollbar-track { background: transparent; }
+.dark-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 2px; }
