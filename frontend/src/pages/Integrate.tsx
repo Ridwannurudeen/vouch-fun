@@ -128,8 +128,8 @@ const API_METHODS = [
   { sig: "get_fee_pool() -> str", desc: "Returns: { fee_pool, query_fee, min_stake }", type: "read" as const },
   { sig: "vouch(identifier)", desc: "Generate trust profile from REAL web data via AI consensus (fee: 1000 wei)", type: "write" as const },
   { sig: "refresh(identifier)", desc: "Re-evaluate with fresh web data (fee: 1000 wei)", type: "write" as const },
-  { sig: "stake_vouch(identifier, dimension, grade)", desc: "Stake tokens endorsing a grade — slashed on dispute (min: 5000 wei)", type: "write" as const },
-  { sig: "dispute(identifier, reason)", desc: "Challenge a score — triggers re-evaluation + stake slashing", type: "write" as const },
+  { sig: "stake_vouch(identifier, dimension, grade)", desc: "Stake tokens endorsing a grade \u2014 slashed on dispute (min: 5000 wei)", type: "write" as const },
+  { sig: "dispute(identifier, reason)", desc: "Challenge a score \u2014 triggers re-evaluation + stake slashing", type: "write" as const },
   { sig: "compare(id_a, id_b)", desc: "AI consensus comparison of two profiles", type: "write" as const },
   { sig: "seed_profile(identifier, profile_json)", desc: "Seed a pre-computed profile", type: "write" as const },
 ];
@@ -144,24 +144,24 @@ export default function Integrate() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-void text-white">
       <Header />
       <main className="mx-auto max-w-4xl px-4 py-12">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Integrate vouch.fun</h1>
-        <p className="text-gray-500 mb-8">
+        <h1 className="text-3xl font-bold text-white mb-2">Integrate vouch.fun</h1>
+        <p className="text-gray-400 mb-8">
           Add 6-dimension trust verification to your GenLayer contract. Query trust tiers, specific dimensions, numeric scores, or confidence levels.
         </p>
 
         {/* Contract address */}
         {contractAddress && (
-          <div className="mb-8 border border-indigo-200 bg-indigo-50 rounded-xl p-4 flex items-center justify-between gap-4">
+          <div className="mb-8 glass rounded-xl p-4 flex items-center justify-between gap-4 border border-accent/20">
             <div>
-              <div className="text-xs text-indigo-600 font-medium mb-1">Live Contract Address</div>
-              <code className="text-sm font-mono text-gray-900 break-all">{contractAddress}</code>
+              <div className="text-xs text-accent font-medium mb-1">Live Contract Address</div>
+              <code className="text-sm font-mono text-gray-300 break-all">{contractAddress}</code>
             </div>
             <button
               onClick={handleCopy}
-              className="shrink-0 text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              className="shrink-0 text-xs px-3 py-1.5 bg-accent text-white rounded-lg hover:bg-accent-bright transition-colors"
             >
               {copied ? "Copied!" : "Copy"}
             </button>
@@ -169,19 +169,19 @@ export default function Integrate() {
         )}
 
         <section className="mb-12">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">API Reference</h2>
+          <h2 className="text-xl font-semibold text-white mb-4">API Reference</h2>
           <div className="space-y-2">
             {API_METHODS.map((m) => (
-              <div key={m.sig} className="border border-gray-200 rounded-lg p-3 flex items-start gap-3">
+              <div key={m.sig} className="glass rounded-lg p-3 flex items-start gap-3">
                 <span className={`shrink-0 mt-0.5 text-xs font-mono px-2 py-0.5 rounded ${
                   m.type === "write"
-                    ? "bg-amber-100 text-amber-700"
-                    : "bg-green-100 text-green-700"
+                    ? "bg-amber-500/15 text-amber-400"
+                    : "bg-green-500/15 text-green-400"
                 }`}>
                   {m.type}
                 </span>
                 <div>
-                  <code className="text-sm font-mono text-blue-600">{m.sig}</code>
+                  <code className="text-sm font-mono text-accent-bright">{m.sig}</code>
                   <p className="text-sm text-gray-500 mt-0.5">{m.desc}</p>
                 </div>
               </div>
@@ -190,46 +190,46 @@ export default function Integrate() {
         </section>
 
         <section className="mb-12">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <h2 className="text-xl font-semibold text-white mb-4">
             From Another Contract (Python)
           </h2>
-          <pre className="bg-gray-900 text-gray-100 rounded-xl p-6 text-sm overflow-x-auto font-mono">
+          <pre className="bg-tn-bg text-gray-100 rounded-xl p-6 text-sm overflow-x-auto font-mono border border-glass-border">
             {PYTHON_EXAMPLE}
           </pre>
         </section>
 
         <section className="mb-12">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <h2 className="text-xl font-semibold text-white mb-4">
             From Frontend (TypeScript)
           </h2>
-          <pre className="bg-gray-900 text-gray-100 rounded-xl p-6 text-sm overflow-x-auto font-mono">
+          <pre className="bg-tn-bg text-gray-100 rounded-xl p-6 text-sm overflow-x-auto font-mono border border-glass-border">
             {JS_EXAMPLE}
           </pre>
         </section>
 
         <section className="mb-12">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <h2 className="text-xl font-semibold text-white mb-4">
             TrustGate: Dimension-Gated Registration
           </h2>
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-gray-400 mb-4">
             Gate access behind specific trust dimensions. Require a minimum code grade for developer tools,
             DeFi experience for protocols, or governance participation for DAOs.
           </p>
-          <pre className="bg-gray-900 text-gray-100 rounded-xl p-6 text-sm overflow-x-auto font-mono">
+          <pre className="bg-tn-bg text-gray-100 rounded-xl p-6 text-sm overflow-x-auto font-mono border border-glass-border">
             {TRUSTGATE_EXAMPLE}
           </pre>
         </section>
 
         <section className="mb-12">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <h2 className="text-xl font-semibold text-white mb-4">
             Use Cases by Dimension
           </h2>
           <div className="space-y-3">
             {USE_CASES.map((uc) => (
-              <div key={uc.app} className="border border-gray-200 rounded-lg p-4">
-                <div className="font-semibold text-gray-900">{uc.app}</div>
-                <div className="text-sm text-gray-600">{uc.use}</div>
-                <code className="text-xs font-mono text-gray-400 mt-1 block">
+              <div key={uc.app} className="glass rounded-lg p-4">
+                <div className="font-semibold text-white">{uc.app}</div>
+                <div className="text-sm text-gray-400">{uc.use}</div>
+                <code className="text-xs font-mono text-gray-500 mt-1 block">
                   {uc.call}
                 </code>
               </div>
@@ -238,14 +238,14 @@ export default function Integrate() {
         </section>
 
         {/* CTA */}
-        <div className="border border-indigo-100 bg-indigo-50/30 rounded-2xl p-8 text-center">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Ready to try it?</h2>
-          <p className="text-sm text-gray-500 mb-4">
+        <div className="glass rounded-2xl p-8 text-center border border-accent/20">
+          <h2 className="text-xl font-bold text-white mb-2">Ready to try it?</h2>
+          <p className="text-sm text-gray-400 mb-4">
             Search any identifier and see the 6-dimension trust profile generated by AI consensus.
           </p>
           <Link
             to="/"
-            className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+            className="inline-block px-6 py-3 bg-accent text-white rounded-lg font-medium hover:bg-accent-bright transition-colors"
           >
             Try vouch.fun
           </Link>

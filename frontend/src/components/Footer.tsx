@@ -3,12 +3,12 @@ import { contractAddress } from "../lib/genlayer";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-gray-200 bg-gray-50 mt-16">
+    <footer className="border-t border-glass-border bg-void-light mt-16">
       <div className="mx-auto max-w-5xl px-4 py-10">
         <div className="grid sm:grid-cols-3 gap-8 mb-8">
           {/* Brand */}
           <div>
-            <span className="text-lg font-bold text-gray-900">vouch.fun</span>
+            <span className="text-lg font-bold text-white">vouch.fun</span>
             <p className="text-sm text-gray-500 mt-2 leading-relaxed">
               6-dimension trust synthesis for the agentic economy.
               Graded by 5 independent AI validators on GenLayer.
@@ -17,20 +17,20 @@ export default function Footer() {
 
           {/* Navigation */}
           <div>
-            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
               Navigate
             </h4>
             <div className="flex flex-col gap-2">
-              <Link to="/explore" className="text-sm text-gray-600 hover:text-gray-900">
+              <Link to="/explore" className="text-sm text-gray-400 hover:text-white transition-colors">
                 Explore Profiles
               </Link>
-              <Link to="/compare" className="text-sm text-gray-600 hover:text-gray-900">
+              <Link to="/compare" className="text-sm text-gray-400 hover:text-white transition-colors">
                 Compare
               </Link>
-              <Link to="/how-it-works" className="text-sm text-gray-600 hover:text-gray-900">
+              <Link to="/how-it-works" className="text-sm text-gray-400 hover:text-white transition-colors">
                 How It Works
               </Link>
-              <Link to="/integrate" className="text-sm text-gray-600 hover:text-gray-900">
+              <Link to="/integrate" className="text-sm text-gray-400 hover:text-white transition-colors">
                 Integrate
               </Link>
             </div>
@@ -38,7 +38,7 @@ export default function Footer() {
 
           {/* Links */}
           <div>
-            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
               Resources
             </h4>
             <div className="flex flex-col gap-2">
@@ -46,7 +46,7 @@ export default function Footer() {
                 href="https://github.com/Ridwannurudeen/vouch-fun"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-gray-600 hover:text-gray-900"
+                className="text-sm text-gray-400 hover:text-white transition-colors"
               >
                 GitHub
               </a>
@@ -54,12 +54,12 @@ export default function Footer() {
                 href="https://www.genlayer.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-gray-600 hover:text-gray-900"
+                className="text-sm text-gray-400 hover:text-white transition-colors"
               >
                 GenLayer
               </a>
               {contractAddress && (
-                <span className="text-xs text-gray-400 font-mono break-all mt-1">
+                <span className="text-xs text-gray-600 font-mono break-all mt-1">
                   Contract: {contractAddress.slice(0, 10)}...{contractAddress.slice(-6)}
                 </span>
               )}
@@ -67,11 +67,11 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-gray-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span className="text-xs text-gray-400">
+        <div className="border-t border-glass-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="text-xs text-gray-600">
             Built for the Bradbury Builders Hackathon
           </span>
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-gray-600">
             Powered by GenLayer Optimistic Democracy
           </span>
         </div>

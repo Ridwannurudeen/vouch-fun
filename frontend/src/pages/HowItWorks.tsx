@@ -43,14 +43,14 @@ function Step({ index, title, description, icon, detail }: StepProps) {
           initial={{ scale: 0 }}
           animate={visible ? { scale: 1 } : {}}
           transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
-          className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600
-                     flex items-center justify-center text-xl font-bold shrink-0"
+          className="w-12 h-12 rounded-full bg-accent-dim text-accent
+                     flex items-center justify-center text-xl font-bold shrink-0 border border-accent/20"
         >
           {icon}
         </motion.div>
         {index < 5 && (
           <motion.div
-            className="w-0.5 h-16 bg-indigo-100 mt-2"
+            className="w-0.5 h-16 bg-accent/20 mt-2"
             initial={{ scaleY: 0 }}
             animate={visible ? { scaleY: 1 } : {}}
             transition={{ duration: 0.4, delay: 0.4 }}
@@ -61,12 +61,12 @@ function Step({ index, title, description, icon, detail }: StepProps) {
 
       {/* Content */}
       <div className="pb-8">
-        <span className="text-xs font-mono text-indigo-500 mb-1 block">
+        <span className="text-xs font-mono text-accent mb-1 block">
           Step {index + 1}
         </span>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
-        <p className="text-gray-600 mb-3">{description}</p>
-        <div className="text-sm text-gray-400 bg-gray-50 rounded-lg p-3 font-mono">
+        <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
+        <p className="text-gray-400 mb-3">{description}</p>
+        <div className="text-sm text-gray-500 bg-white/[0.03] border border-glass-border rounded-lg p-3 font-mono">
           {detail}
         </div>
       </div>
@@ -87,7 +87,7 @@ const STEPS: StepProps[] = [
     index: 1,
     title: "Validators fetch REAL web data",
     description:
-      "Each validator uses gl.nondet.web.render() to fetch real GitHub API data, Etherscan pages, and ENS records. No hallucination — grades are based on actual evidence.",
+      "Each validator uses gl.nondet.web.render() to fetch real GitHub API data, Etherscan pages, and ENS records. No hallucination \u2014 grades are based on actual evidence.",
     icon: "\u{1F310}",
     detail:
       'web.render("api.github.com/users/torvalds") \u2192 { repos: 7, stars: 180k, ... }',
@@ -123,7 +123,7 @@ const STEPS: StepProps[] = [
     index: 5,
     title: "Stake, query, or dispute",
     description:
-      "Other contracts query dimensions. Users stake tokens endorsing grades. Disputes trigger re-evaluation with fresh data — wrong stakers get slashed.",
+      "Other contracts query dimensions. Users stake tokens endorsing grades. Disputes trigger re-evaluation with fresh data \u2014 wrong stakers get slashed.",
     icon: "\u{1F527}",
     detail:
       'stake_vouch("torvalds", "code", "A") | dispute("torvalds", "grade wrong")',
@@ -132,12 +132,12 @@ const STEPS: StepProps[] = [
 
 export default function HowItWorks() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-void text-white">
       <Header />
       <main className="mx-auto max-w-3xl px-4 py-16">
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">How It Works</h1>
-          <p className="text-lg text-gray-500 max-w-xl mx-auto">
+          <h1 className="text-4xl font-bold text-white mb-3">How It Works</h1>
+          <p className="text-lg text-gray-400 max-w-xl mx-auto">
             vouch.fun fetches real web data, then uses GenLayer's AI consensus to synthesize
             6-dimension trust profiles. Evidence-grounded, stake-backed, fully on-chain.
           </p>
@@ -151,33 +151,33 @@ export default function HowItWorks() {
 
         {/* Why GenLayer section */}
         <motion.div
-          className="mt-16 border border-indigo-100 rounded-2xl p-8 bg-indigo-50/30"
+          className="mt-16 glass rounded-2xl p-8 border border-accent/20"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">
+          <h2 className="text-2xl font-bold text-white mb-4 text-center">
             Why This Is Only Possible on GenLayer
           </h2>
           <div className="grid md:grid-cols-3 gap-6 text-center">
             <div>
               <div className="text-2xl mb-2">{"\uD83E\uDDE0"}</div>
-              <h4 className="font-bold text-gray-900 mb-1">AI-Native Consensus</h4>
-              <p className="text-sm text-gray-600">
+              <h4 className="font-bold text-white mb-1">AI-Native Consensus</h4>
+              <p className="text-sm text-gray-400">
                 Validators run LLMs, not just hash computations. Trust assessment requires intelligence.
               </p>
             </div>
             <div>
               <div className="text-2xl mb-2">{"\uD83E\uDD1D"}</div>
-              <h4 className="font-bold text-gray-900 mb-1">Optimistic Democracy</h4>
-              <p className="text-sm text-gray-600">
+              <h4 className="font-bold text-white mb-1">Optimistic Democracy</h4>
+              <p className="text-sm text-gray-400">
                 The Equivalence Principle ensures assessments agree semantically, not just numerically.
               </p>
             </div>
             <div>
               <div className="text-2xl mb-2">{"\uD83D\uDD17"}</div>
-              <h4 className="font-bold text-gray-900 mb-1">Composable Trust</h4>
-              <p className="text-sm text-gray-600">
+              <h4 className="font-bold text-white mb-1">Composable Trust</h4>
+              <p className="text-sm text-gray-400">
                 Any contract reads trust tiers via a single view call. No APIs, no middleware.
               </p>
             </div>
@@ -186,27 +186,27 @@ export default function HowItWorks() {
 
         {/* vs Ethos */}
         <motion.div
-          className="mt-12 border border-gray-200 rounded-2xl p-8"
+          className="mt-12 glass rounded-2xl p-8"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-xl font-bold text-gray-900 mb-4 text-center">
+          <h2 className="text-xl font-bold text-white mb-4 text-center">
             vouch.fun vs Traditional Reputation
           </h2>
           <div className="grid md:grid-cols-2 gap-6 text-sm">
-            <div className="bg-gray-50 rounded-xl p-4">
+            <div className="bg-white/[0.03] rounded-xl p-4 border border-glass-border">
               <h4 className="font-bold text-gray-500 mb-2">Traditional (Ethos, etc.)</h4>
-              <ul className="space-y-1 text-gray-600">
+              <ul className="space-y-1 text-gray-400">
                 <li>- Human peer reviews (subjective)</li>
                 <li>- Centralized API dependency</li>
                 <li>- Sybil-vulnerable (fake vouches)</li>
                 <li>- Not composable on-chain</li>
               </ul>
             </div>
-            <div className="bg-indigo-50 rounded-xl p-4">
-              <h4 className="font-bold text-indigo-700 mb-2">vouch.fun (AI Consensus)</h4>
-              <ul className="space-y-1 text-indigo-900">
+            <div className="bg-accent-dim rounded-xl p-4 border border-accent/20">
+              <h4 className="font-bold text-accent-bright mb-2">vouch.fun (AI Consensus)</h4>
+              <ul className="space-y-1 text-gray-300">
                 <li>- AI evaluates real activity (objective)</li>
                 <li>- Fully on-chain, no API</li>
                 <li>- Sybil-resistant (code speaks)</li>
@@ -218,10 +218,10 @@ export default function HowItWorks() {
 
         {/* CTA */}
         <div className="mt-16 text-center">
-          <p className="text-gray-500 mb-4">Ready to integrate trust into your contract?</p>
+          <p className="text-gray-400 mb-4">Ready to integrate trust into your contract?</p>
           <Link
             to="/integrate"
-            className="inline-block px-8 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+            className="inline-block px-8 py-3 bg-accent text-white rounded-lg font-medium hover:bg-accent-bright transition-colors"
           >
             View Integration Docs
           </Link>

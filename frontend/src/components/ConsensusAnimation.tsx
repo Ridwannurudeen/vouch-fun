@@ -84,10 +84,10 @@ export default function ConsensusAnimation() {
           exit={{ opacity: 0, y: -10 }}
           className="text-center"
         >
-          <p className={`text-lg font-medium ${isDone ? "text-green-600" : "text-gray-700"}`}>
+          <p className={`text-lg font-medium ${isDone ? "text-green-400" : "text-gray-300"}`}>
             {PHASES[phase].label}
           </p>
-          <p className="text-xs text-gray-400 font-mono mt-1">{elapsed}s elapsed</p>
+          <p className="text-xs text-gray-600 font-mono mt-1">{elapsed}s elapsed</p>
         </motion.div>
       </AnimatePresence>
 
@@ -102,7 +102,7 @@ export default function ConsensusAnimation() {
               y1={NODE_POSITIONS[a].y}
               x2={NODE_POSITIONS[b].x}
               y2={NODE_POSITIONS[b].y}
-              stroke={isDone ? "#22c55e" : "#6366f1"}
+              stroke={isDone ? "#4ade80" : "#818cf8"}
               strokeWidth="1.5"
               strokeOpacity={0.4}
               initial={{ pathLength: 0 }}
@@ -118,7 +118,7 @@ export default function ConsensusAnimation() {
               cy={140}
               r={isDone ? 30 : 20}
               fill="none"
-              stroke={isDone ? "#22c55e" : "#6366f1"}
+              stroke={isDone ? "#4ade80" : "#818cf8"}
               strokeWidth="2"
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{
@@ -133,7 +133,7 @@ export default function ConsensusAnimation() {
               x={150}
               y={145}
               textAnchor="middle"
-              fill="#22c55e"
+              fill="#4ade80"
               fontSize="24"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -147,10 +147,10 @@ export default function ConsensusAnimation() {
           {NODE_POSITIONS.map((pos, i) => {
             const isActive = activeNodes.includes(i);
             const nodeColor = isDone
-              ? "#22c55e"
+              ? "#4ade80"
               : isActive
-              ? "#6366f1"
-              : "#d1d5db";
+              ? "#818cf8"
+              : "#374151";
             return (
               <g key={i}>
                 {/* Pulse ring for active nodes */}
@@ -173,12 +173,12 @@ export default function ConsensusAnimation() {
                   cx={pos.x}
                   cy={pos.y}
                   r={16}
-                  fill={isActive ? nodeColor : "white"}
+                  fill={isActive ? nodeColor : "#0a0a12"}
                   stroke={nodeColor}
                   strokeWidth="2"
                   initial={false}
                   animate={{
-                    fill: isActive ? nodeColor : "white",
+                    fill: isActive ? nodeColor : "#0a0a12",
                     scale: isActive ? [1, 1.05, 1] : 1,
                   }}
                   transition={{ duration: 0.4 }}
@@ -190,7 +190,7 @@ export default function ConsensusAnimation() {
                   dominantBaseline="middle"
                   fontSize="10"
                   fontFamily="monospace"
-                  fill={isActive ? "white" : "#9ca3af"}
+                  fill={isActive ? "white" : "#6b7280"}
                 >
                   V{i + 1}
                 </text>
@@ -200,7 +200,7 @@ export default function ConsensusAnimation() {
                   y={pos.y + 32}
                   textAnchor="middle"
                   fontSize="8"
-                  fill="#9ca3af"
+                  fill="#6b7280"
                   fontFamily="sans-serif"
                 >
                   {VALIDATOR_LABELS[i]}
@@ -219,12 +219,12 @@ export default function ConsensusAnimation() {
               className={`w-2 h-2 rounded-full mx-auto mb-1 ${
                 activeNodes.includes(i)
                   ? isDone
-                    ? "bg-green-500"
-                    : "bg-indigo-500"
-                  : "bg-gray-300"
+                    ? "bg-green-400"
+                    : "bg-accent"
+                  : "bg-gray-700"
               }`}
             />
-            <span className="text-gray-400 font-mono">
+            <span className="text-gray-500 font-mono">
               {activeNodes.includes(i) ? (isDone ? "Done" : "Active") : "Idle"}
             </span>
           </div>
@@ -232,9 +232,9 @@ export default function ConsensusAnimation() {
       </div>
 
       {/* Progress bar */}
-      <div className="w-64 h-1 bg-gray-200 rounded-full overflow-hidden">
+      <div className="w-64 h-1 bg-white/5 rounded-full overflow-hidden">
         <motion.div
-          className={`h-full ${isDone ? "bg-green-500" : "bg-indigo-500"}`}
+          className={`h-full ${isDone ? "bg-green-400" : "bg-accent"}`}
           initial={{ width: 0 }}
           animate={{ width: `${Math.min(100, (elapsed / 80) * 100)}%` }}
           transition={{ duration: 0.5 }}

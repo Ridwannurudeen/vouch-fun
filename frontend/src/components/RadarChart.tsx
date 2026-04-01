@@ -45,14 +45,14 @@ export default function RadarChart({ profileA, profileB }: RadarChartProps) {
   return (
     <ResponsiveContainer width="100%" height={320}>
       <RechartsRadarChart data={data} cx="50%" cy="50%" outerRadius="75%">
-        <PolarGrid stroke="#e5e7eb" />
-        <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11, fill: "#6b7280" }} />
+        <PolarGrid stroke="rgba(255,255,255,0.08)" />
+        <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11, fill: "#9ca3af" }} />
         <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
         <Radar
           name={idA}
           dataKey={idA}
-          stroke="#6366f1"
-          fill="#6366f1"
+          stroke="#818cf8"
+          fill="#818cf8"
           fillOpacity={0.15}
           strokeWidth={2}
         />
@@ -66,7 +66,7 @@ export default function RadarChart({ profileA, profileB }: RadarChartProps) {
             strokeWidth={2}
           />
         )}
-        <Legend wrapperStyle={{ fontSize: 12 }} />
+        <Legend wrapperStyle={{ fontSize: 12, color: "#9ca3af" }} />
       </RechartsRadarChart>
     </ResponsiveContainer>
   );

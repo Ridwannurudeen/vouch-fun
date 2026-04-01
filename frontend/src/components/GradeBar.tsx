@@ -15,7 +15,7 @@ const GRADE_COLORS: Record<string, string> = {
   C: "bg-amber-500",
   D: "bg-orange-500",
   F: "bg-red-500",
-  "N/A": "bg-gray-300",
+  "N/A": "bg-gray-600",
 };
 
 interface GradeBarProps {
@@ -26,12 +26,12 @@ interface GradeBarProps {
 export default function GradeBar({ label, grade }: GradeBarProps) {
   const letter = grade.charAt(0).toUpperCase();
   const width = GRADE_WIDTHS[letter] ?? 5;
-  const color = GRADE_COLORS[letter] ?? "bg-gray-300";
+  const color = GRADE_COLORS[letter] ?? "bg-gray-600";
 
   return (
     <div className="flex items-center gap-3">
       <span className="text-xs text-gray-500 w-20 text-right">{label}</span>
-      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
         <motion.div
           className={`h-full ${color} rounded-full`}
           initial={{ width: 0 }}
@@ -39,7 +39,7 @@ export default function GradeBar({ label, grade }: GradeBarProps) {
           transition={{ duration: 0.8, ease: "easeOut" }}
         />
       </div>
-      <span className="text-xs font-mono font-bold text-gray-700 w-6">{grade}</span>
+      <span className="text-xs font-mono font-bold text-gray-300 w-6">{grade}</span>
     </div>
   );
 }
