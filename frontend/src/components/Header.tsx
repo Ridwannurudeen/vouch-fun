@@ -9,7 +9,7 @@ export default function Header() {
       <div className="mx-auto max-w-5xl px-4 py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <span className="text-xl font-bold text-gray-900">vouch.fun</span>
-          <span className="text-xs text-gray-500 font-mono mt-1">Trust, Verified.</span>
+          <span className="text-xs text-gray-500 font-mono mt-1">Trust Synthesis</span>
         </Link>
 
         {/* Desktop nav */}

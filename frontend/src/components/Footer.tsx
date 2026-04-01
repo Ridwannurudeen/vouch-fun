@@ -10,8 +10,8 @@ export default function Footer() {
           <div>
             <span className="text-lg font-bold text-gray-900">vouch.fun</span>
             <p className="text-sm text-gray-500 mt-2 leading-relaxed">
-              Composable reputation oracle powered by AI consensus on GenLayer.
-              Trust profiles verified by 5 independent validators.
+              6-dimension trust synthesis for the agentic economy.
+              Graded by 5 independent AI validators on GenLayer.
             </p>
           </div>
 

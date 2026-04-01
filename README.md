@@ -352,44 +352,46 @@ Every profile stores its provenance:
 ```
 vouch-fun/
   contracts/
-    vouch_protocol.py        # Core trust oracle: 6-dimension AI synthesis, v3 schema
-    trust_gate.py            # Dimension-gated consumer contract (composability demo)
-    agent_registry.py        # Trust-gated agent registration (v2 consumer)
-    trusted_transfer.py      # Example trust-gated transfer
-    vouch_helpers.py         # Pure Python helpers (testable without GenLayer)
-  frontend/src/
-    lib/genlayer.ts          # GenLayer SDK integration + demo profiles
-    pages/
-      Home.tsx               # Hero, search, 6-dimension visual, trust flow teaser
-      Profile.tsx            # 6-axis radar chart, confidence badges, trust score
-      Explore.tsx            # Filterable profile grid by tier and dimension
-      Compare.tsx            # Side-by-side 6-axis radar overlay + comparison table
-      HowItWorks.tsx         # Scroll-animated consensus explainer
-      Integrate.tsx          # Composability examples, TrustGate reference, use cases
-      NotFound.tsx           # 404 page
-    components/
-      ConsensusAnimation.tsx # Animated 5-node validator consensus visualization
-      ProfileCard.tsx        # Reusable profile card for grids
-      RadarChart.tsx         # Recharts 6-axis radar for profiles and comparisons
-      GradeBar.tsx           # Animated horizontal grade fill bars
-      GradeCard.tsx          # Grade display with stats + reasoning
-      DisputeModal.tsx       # Challenge score submission modal
-      TrustBadge.tsx         # Colored trust tier badge (TRUSTED/MODERATE/LOW/UNKNOWN)
-      SearchBar.tsx          # Universal input: GitHub, ENS, wallet, or @twitter
-      StatsBar.tsx           # Live profile/query/dispute counts
-      Header.tsx             # Navigation
-      Footer.tsx             # Site footer
-  deploy/
-    001_deploy_vouch.ts      # VouchProtocol deployment
-    002_deploy_trusted_transfer.ts
+    vouch_protocol.py          # Core trust oracle: 6-dimension AI synthesis (11,977 bytes)
+    trust_gate.py              # Dimension-gated consumer contract (composability demo)
+  frontend/
+    index.html                 # OG meta tags, favicon, Inter font
+    src/
+      lib/genlayer.ts          # GenLayer SDK integration + 6 demo profiles
+      types.ts                 # TrustProfile, DimensionScore, DIMENSIONS, DIMENSION_LABELS
+      pages/
+        Home.tsx               # Agent use cases, 6-dimension grid, trust flow teaser
+        Profile.tsx            # 6-axis radar, confidence badges, trust score, key signals
+        Explore.tsx            # Filterable + sortable profile grid by tier
+        Compare.tsx            # Side-by-side 6-axis radar + dimension comparison table
+        HowItWorks.tsx         # Scroll-animated 5-step consensus explainer
+        Integrate.tsx          # Full v3 API reference, TrustGate examples, use cases
+      components/
+        ConsensusAnimation.tsx # Animated 5-node validator consensus pentagon
+        RadarChart.tsx         # Recharts 6-axis radar (single + comparison mode)
+        GradeCard.tsx          # Dimension card: grade, confidence badge, key signals
+        GradeBar.tsx           # Animated horizontal grade bar
+        ProfileCard.tsx        # Profile card with 6 dimension badges
+        DisputeModal.tsx       # Challenge score submission modal
+        SearchBar.tsx          # Universal input: GitHub, ENS, wallet, or @twitter
+        TrustBadge.tsx         # Colored trust tier badge
+        StatsBar.tsx           # Live profile/query/dispute counts
   scripts/
-    deploy_v3.mjs           # v3 deployment with retry logic
-    test_vouch_v3.mjs       # v3 contract integration tests
+    deploy_v3.mjs              # VouchProtocol v3 deployment + polling
+    deploy_trustgate.mjs       # TrustGate deployment with dimension config
+    test_trustgate.mjs         # Cross-contract registration test
+    test_vouch_v3.mjs          # Contract integration tests
   tests/
-    test_prompts.py          # Prompt construction + parsing tests
-    test_validators.py       # Validator evaluation tests
-    test_handle_index.py     # Handle-to-address resolution tests
-  docs/plans/                # Design documents and implementation plans
+    test_v3_helpers.py         # 62 unit tests: type detection, sanitization, parsing, grades
+    test_v3_schema.py          # 132 schema validation tests for all 6 demo profiles
+    test_validators.py         # Validator input validation tests
+    test_prompts.py            # Prompt construction tests
+    test_handle_index.py       # Handle-to-address resolution tests
+    fixtures/
+      demo_profiles.json       # 6 demo profiles matching frontend fallback data
+  docs/
+    plans/                     # Design documents
+    pitch.md                   # Hackathon submission pitch one-pager
 ```
 
 ---
@@ -399,13 +401,14 @@ vouch-fun/
 ```bash
 # Frontend
 cd frontend && npm install
-cp .env.example .env  # set VITE_CONTRACT_ADDRESS
+cp .env.example .env  # set VITE_CONTRACT_ADDRESS and optional VITE_DEMO_PRIVATE_KEY
 npm run dev
 
-# Deploy contracts (requires GenLayer private key)
-GENLAYER_PRIVATE_KEY=0x... node scripts/deploy_v3.mjs
+# Deploy contracts (requires Bradbury testnet private key with GEN)
+DEPLOY_KEY=0x... node scripts/deploy_v3.mjs
+DEPLOY_KEY=0x... VOUCH_ADDRESS=0x... node scripts/deploy_trustgate.mjs
 
-# Run tests
+# Run tests (240 tests)
 python -m pytest tests/ -v
 ```
 
