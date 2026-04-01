@@ -1,4 +1,8 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
+import { contractAddress } from "../lib/genlayer";
 
 const PYTHON_EXAMPLE = `# Inside your GenLayer contract:
 import gl
@@ -33,6 +37,20 @@ const profile = await client.readContract({
   args: ["torvalds"],
 });`;
 
+const COMPOSABILITY_EXAMPLE = `# AgentRegistry: gate agent registration by trust score
+import gl
+
+class AgentRegistry(gl.Contract):
+    vouch_address: str
+    agents: TreeMap[Address, str]
+
+    @gl.public.write
+    def register_agent(self, agent_name: str):
+        tier = gl.ContractAt(self.vouch_address).get_trust_tier(gl.message.sender_account)
+        if tier in ("LOW", "UNKNOWN"):
+            raise Exception("Insufficient trust to register as agent")
+        self.agents[gl.message.sender_account] = agent_name`;
+
 const USE_CASES = [
   {
     app: "Rally",
@@ -51,7 +69,73 @@ const USE_CASES = [
   },
 ];
 
+const API_METHODS = [
+  {
+    sig: "get_trust_tier(address: str) -> str",
+    desc: "Returns: TRUSTED | MODERATE | LOW | UNKNOWN",
+    type: "read" as const,
+  },
+  {
+    sig: "get_profile(address: str) -> str",
+    desc: "Returns: Full JSON profile with grades, reasoning, and data (by address)",
+    type: "read" as const,
+  },
+  {
+    sig: "get_profile_by_handle(handle: str) -> str",
+    desc: "Returns: Full JSON profile resolved by GitHub handle",
+    type: "read" as const,
+  },
+  {
+    sig: "lookup_address(handle: str) -> str",
+    desc: "Returns: Wallet address associated with a GitHub handle",
+    type: "read" as const,
+  },
+  {
+    sig: "get_stats() -> str",
+    desc: 'Returns: { "profile_count": int, "query_count": int, "dispute_count": int }',
+    type: "read" as const,
+  },
+  {
+    sig: "get_all_handles() -> str",
+    desc: "Returns: JSON array of all registered GitHub handles",
+    type: "read" as const,
+  },
+  {
+    sig: "get_comparison(handle_a: str, handle_b: str) -> str",
+    desc: "Returns: Stored comparison result with summary, winner, and reasoning",
+    type: "read" as const,
+  },
+  {
+    sig: "vouch(handle: str)",
+    desc: "Triggers AI consensus to generate a new trust profile (requires GEN for gas)",
+    type: "write" as const,
+  },
+  {
+    sig: "refresh(handle: str)",
+    desc: "Re-evaluates an existing profile via AI consensus (requires GEN for gas)",
+    type: "write" as const,
+  },
+  {
+    sig: "dispute(handle: str, reason: str)",
+    desc: "Challenges a trust score for re-evaluation (requires GEN for gas)",
+    type: "write" as const,
+  },
+  {
+    sig: "compare(handle_a: str, handle_b: str)",
+    desc: "Triggers AI consensus comparison of two profiles (requires GEN for gas)",
+    type: "write" as const,
+  },
+];
+
 export default function Integrate() {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(contractAddress);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Header />
@@ -61,49 +145,40 @@ export default function Integrate() {
           Add trust verification to your GenLayer contract in one call.
         </p>
 
+        {/* Contract address */}
+        {contractAddress && (
+          <div className="mb-8 border border-indigo-200 bg-indigo-50 rounded-xl p-4 flex items-center justify-between gap-4">
+            <div>
+              <div className="text-xs text-indigo-600 font-medium mb-1">Live Contract Address</div>
+              <code className="text-sm font-mono text-gray-900 break-all">{contractAddress}</code>
+            </div>
+            <button
+              onClick={handleCopy}
+              className="shrink-0 text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              {copied ? "Copied!" : "Copy"}
+            </button>
+          </div>
+        )}
+
         <section className="mb-12">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">API Reference</h2>
-          <div className="space-y-4">
-            <div className="border border-gray-200 rounded-lg p-4">
-              <code className="text-sm font-mono text-blue-600">
-                get_trust_tier(address: str) -&gt; str
-              </code>
-              <p className="text-sm text-gray-500 mt-1">
-                Returns: TRUSTED | MODERATE | LOW | UNKNOWN
-              </p>
-            </div>
-            <div className="border border-gray-200 rounded-lg p-4">
-              <code className="text-sm font-mono text-blue-600">
-                get_profile(address: str) -&gt; str
-              </code>
-              <p className="text-sm text-gray-500 mt-1">
-                Returns: Full JSON profile with grades, reasoning, and data (by address)
-              </p>
-            </div>
-            <div className="border border-gray-200 rounded-lg p-4">
-              <code className="text-sm font-mono text-blue-600">
-                get_profile_by_handle(handle: str) -&gt; str
-              </code>
-              <p className="text-sm text-gray-500 mt-1">
-                Returns: Full JSON profile resolved by GitHub handle
-              </p>
-            </div>
-            <div className="border border-gray-200 rounded-lg p-4">
-              <code className="text-sm font-mono text-blue-600">
-                lookup_address(handle: str) -&gt; str
-              </code>
-              <p className="text-sm text-gray-500 mt-1">
-                Returns: Wallet address associated with a GitHub handle
-              </p>
-            </div>
-            <div className="border border-gray-200 rounded-lg p-4">
-              <code className="text-sm font-mono text-blue-600">
-                get_stats() -&gt; str
-              </code>
-              <p className="text-sm text-gray-500 mt-1">
-                Returns: {`{ "profile_count": int, "query_count": int }`}
-              </p>
-            </div>
+          <div className="space-y-3">
+            {API_METHODS.map((m) => (
+              <div key={m.sig} className="border border-gray-200 rounded-lg p-4 flex items-start gap-3">
+                <span className={`shrink-0 mt-0.5 text-xs font-mono px-2 py-0.5 rounded ${
+                  m.type === "write"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-green-100 text-green-700"
+                }`}>
+                  {m.type === "write" ? "write" : "read"}
+                </span>
+                <div>
+                  <code className="text-sm font-mono text-blue-600">{m.sig}</code>
+                  <p className="text-sm text-gray-500 mt-1">{m.desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -127,6 +202,18 @@ export default function Integrate() {
 
         <section className="mb-12">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Composable AgentRegistry Example
+          </h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Gate agent registration behind a trust check — any GenLayer contract can query vouch.fun as a composable oracle.
+          </p>
+          <pre className="bg-gray-900 text-gray-100 rounded-xl p-6 text-sm overflow-x-auto font-mono">
+            {COMPOSABILITY_EXAMPLE}
+          </pre>
+        </section>
+
+        <section className="mb-12">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Integration Examples
           </h2>
           <div className="space-y-3">
@@ -141,7 +228,22 @@ export default function Integrate() {
             ))}
           </div>
         </section>
+
+        {/* CTA */}
+        <div className="border border-indigo-100 bg-indigo-50/30 rounded-2xl p-8 text-center">
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Ready to try it?</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Search any GitHub handle and see the trust profile generated by AI consensus.
+          </p>
+          <Link
+            to="/"
+            className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+          >
+            Try vouch.fun
+          </Link>
+        </div>
       </main>
+      <Footer />
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 interface StepProps {
   index: number;
@@ -204,7 +206,19 @@ export default function HowItWorks() {
             </div>
           </div>
         </motion.div>
+
+        {/* CTA */}
+        <div className="mt-16 text-center">
+          <p className="text-gray-500 mb-4">Ready to integrate trust into your contract?</p>
+          <Link
+            to="/integrate"
+            className="inline-block px-8 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+          >
+            View Integration Docs
+          </Link>
+        </div>
       </main>
+      <Footer />
     </div>
   );
 }

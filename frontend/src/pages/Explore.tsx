@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 import ProfileCard from "../components/ProfileCard";
 import { getAllProfiles } from "../lib/genlayer";
 import type { TrustProfile } from "../types";
@@ -47,7 +48,7 @@ export default function Explore() {
         </div>
 
         {/* Filter tabs */}
-        <div className="flex justify-center gap-2 mb-8">
+        <div className="flex flex-wrap justify-center gap-2 mb-8">
           {(["ALL", "TRUSTED", "MODERATE", "LOW"] as TierFilter[]).map((tier) => (
             <button
               key={tier}
@@ -64,10 +65,24 @@ export default function Explore() {
         </div>
 
         {loading ? (
-          <div className="text-center py-20 text-gray-400 font-mono">Loading profiles...</div>
+          <div className="text-center py-20">
+            <div className="inline-block w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin mb-4" />
+            <p className="text-gray-400 font-mono text-sm">Loading profiles...</p>
+          </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
-            No profiles match this filter.
+          <div className="text-center py-20">
+            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <p className="text-gray-500 font-medium mb-2">No profiles match this filter</p>
+            <button
+              onClick={() => setFilter("ALL")}
+              className="text-sm text-indigo-600 hover:text-indigo-800 font-medium underline"
+            >
+              Show all profiles
+            </button>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -77,6 +92,7 @@ export default function Explore() {
           </div>
         )}
       </main>
+      <Footer />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 import TrustBadge from "../components/TrustBadge";
 import GradeBar from "../components/GradeBar";
 import RadarChart from "../components/RadarChart";
@@ -83,7 +84,10 @@ export default function Compare() {
         </form>
 
         {loading && (
-          <div className="text-center py-12 text-gray-400 font-mono">Loading profiles...</div>
+          <div className="text-center py-12">
+            <div className="inline-block w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin mb-4" />
+            <p className="text-gray-400 font-mono text-sm">Loading profiles...</p>
+          </div>
         )}
 
         {!loading && profileA && profileB && (
@@ -164,31 +168,52 @@ export default function Compare() {
 
         {!loading && !profileA && !profileB && !a && (
           <div className="text-center py-12">
-            <p className="text-gray-400 mb-4">Enter two GitHub handles to compare their trust profiles</p>
-            <div className="flex flex-wrap gap-2 justify-center text-xs font-mono text-gray-500">
+            <div className="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+              </svg>
+            </div>
+            <p className="text-gray-500 font-medium mb-2">Compare two developers side by side</p>
+            <p className="text-sm text-gray-400 mb-6">See how trust profiles stack up across code activity and on-chain presence</p>
+            <div className="flex flex-wrap gap-3 justify-center">
               <button
                 onClick={() => {
                   setHandleA("vbuterin");
                   setHandleB("gakonst");
+                  navigate("/compare/vbuterin/gakonst");
                 }}
-                className="underline hover:text-gray-900"
+                className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-mono
+                           hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
               >
-                vbuterin vs gakonst
+                vbuterin <span className="text-gray-400">vs</span> gakonst
               </button>
-              <span className="text-gray-300">|</span>
               <button
                 onClick={() => {
                   setHandleA("torvalds");
                   setHandleB("vbuterin");
+                  navigate("/compare/torvalds/vbuterin");
                 }}
-                className="underline hover:text-gray-900"
+                className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-mono
+                           hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
               >
-                torvalds vs vbuterin
+                torvalds <span className="text-gray-400">vs</span> vbuterin
+              </button>
+              <button
+                onClick={() => {
+                  setHandleA("haydenzadams");
+                  setHandleB("samczsun");
+                  navigate("/compare/haydenzadams/samczsun");
+                }}
+                className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-mono
+                           hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
+              >
+                haydenzadams <span className="text-gray-400">vs</span> samczsun
               </button>
             </div>
           </div>
         )}
       </main>
+      <Footer />
     </div>
   );
 }

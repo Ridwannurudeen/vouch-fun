@@ -5,6 +5,7 @@ import Integrate from "./pages/Integrate";
 import Explore from "./pages/Explore";
 import Compare from "./pages/Compare";
 import HowItWorks from "./pages/HowItWorks";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/compare" element={<Compare />} />
         <Route path="/compare/:a/:b" element={<Compare />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );
