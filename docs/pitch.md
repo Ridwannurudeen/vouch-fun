@@ -13,9 +13,9 @@ No composable primitive exists that synthesizes trust across dimensions. Every p
 
 ## Solution
 
-vouch.fun is a 6-dimension trust synthesis protocol. Five independent AI validators evaluate an identity across code, on-chain, social, governance, DeFi, and identity signals -- then reach consensus via GenLayer's Equivalence Principle. The output is graded (A-F), reasoned, and tagged with honest confidence levels.
+vouch.fun is a 6-dimension trust synthesis protocol. Five independent AI validators fetch real web data (GitHub API, Etherscan, ENS), then grade the evidence across code, on-chain, social, governance, DeFi, and identity -- reaching consensus via GenLayer's Equivalence Principle. The output is graded (A-F), grounded in real data, and tagged with honest confidence levels.
 
-APIs give data. vouch.fun gives judgment.
+APIs give data. vouch.fun gives evidence-grounded judgment.
 
 ## Why Agentic Economy
 
@@ -51,7 +51,8 @@ TrustGate, our deployed consumer contract, demonstrates this: it gates registrat
 
 This is not "call GPT-4 from Chainlink and store the result."
 
-- **exec_prompt**: Validators run LLMs natively. No oracle middleware, no API keys, no single point of failure.
+- **web.render**: Validators fetch real GitHub API, Etherscan, and ENS data. Grades are grounded in evidence, not hallucination.
+- **exec_prompt**: Validators run LLMs natively to grade the fetched data. No oracle middleware, no API keys, no single point of failure.
 - **Equivalence Principle**: Trust evaluation is subjective. Five validators independently assess and agree on equivalence -- not identity. This is impossible on deterministic chains.
 - **Native composability**: `gl.ContractAt()` makes cross-contract trust queries a one-liner. No oracle interface to learn.
 - **Optimistic Democracy**: Propose, validate, appeal. Incorrect evaluations get challenged through the protocol itself -- vouch.fun's dispute system leverages this directly.
@@ -72,19 +73,20 @@ They give data. We give judgment with confidence.
 
 ## What's Built
 
-- **VouchProtocol** -- Intelligent Contract with 6-dimension evaluation, universal identifier input (GitHub/ENS/wallet/@twitter), dispute system, vouch bonds, comparison engine
+- **VouchProtocol** -- Intelligent Contract with web-grounded 6-dimension evaluation via `gl.nondet.web.render()`, universal identifier input (GitHub/ENS/wallet/@twitter), query fees, stake-to-vouch, dispute+slash system, comparison engine
 - **TrustGate** -- Consumer contract demonstrating dimension-gated registration via cross-contract calls
-- **React frontend** -- 6-axis radar chart, dimension cards with confidence badges, trust scores (0-100), universal search, comparison view, integration docs
+- **Economic model** -- Query fees (1000 wei/vouch), stake-to-vouch (5000 wei min), dispute slashing of wrong stakers
+- **React frontend** -- 6-axis radar chart, dimension cards with confidence badges, trust scores (0-100), staking UI, universal search, comparison view, integration docs
 - **6 demo profiles** -- Full-spectrum (vbuterin), domain-skewed (torvalds), honest-low-confidence (ridwannurudeen), and 3 more covering the assessment range
 
 ## Roadmap
 
 | Version | Status       | Focus                                                   |
 |---------|-------------|---------------------------------------------------------|
-| v3      | Now (live)  | 6-dimension AI synthesis, confidence levels, TrustGate  |
-| v4      | Post-hack   | Verified data feeds -- GitHub/on-chain/social indexers feed real data alongside LLM synthesis |
-| v5      | Mainnet     | Fee model, vouch bond staking, slash economics, up to 20% protocol revenue share |
+| v3      | Previous    | 6-dimension AI synthesis, confidence levels, TrustGate  |
+| v4      | Now (live)  | Web-grounded data (gl.nondet.web.render), query fees, stake-to-vouch, slash-on-dispute |
+| v5      | Mainnet     | Multi-chain indexers, enhanced staking economics, up to 20% protocol revenue share |
 
 ---
 
-**One sentence:** vouch.fun is the first composable trust primitive where decentralized AI consensus synthesizes 6-dimensional judgment -- not just data -- for the agentic economy.
+**One sentence:** vouch.fun is the first composable trust primitive where decentralized AI consensus fetches real web data and synthesizes evidence-grounded 6-dimensional judgment -- with query fees, staking, and slash economics -- for the agentic economy.

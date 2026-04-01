@@ -1,6 +1,6 @@
 # vouch.fun --- Composable Trust Synthesis for the Agentic Economy
 
-Multi-dimensional trust synthesis via decentralized AI consensus. 5 independent validators evaluate 6 trust dimensions and reach agreement through GenLayer's Equivalence Principle. The first composable reputation primitive that provides judgment, not just data.
+Web-grounded trust synthesis via decentralized AI consensus. 5 independent validators fetch real data from GitHub API, Etherscan, and ENS via `gl.nondet.web.render()`, then grade 6 trust dimensions through GenLayer's Equivalence Principle. Evidence-grounded judgment with query fees, stake-to-vouch, and dispute slashing.
 
 **Live:** https://vouch.gudman.xyz
 
@@ -69,24 +69,28 @@ Each dimension returns a structured assessment:
    - Starts with @      -->  Twitter handle
    - Otherwise          -->  GitHub handle
 
-3. Prompt Construction
-   Contract builds a structured evaluation prompt targeting all 6 dimensions
+3. Web Data Fetching (NEW in v4)
+   Validators use gl.nondet.web.render() to fetch REAL data:
+   - GitHub: api.github.com/users/{handle} --> repos, stars, followers, created_at
+   - Etherscan: etherscan.io/address/{addr} --> tx count, balance, contract interactions
+   - ENS: app.ens.domains/{name} --> resolution, records
+   AI grades are grounded in actual evidence, not hallucinated from training data.
 
-4. Independent Evaluation
-   5 GenLayer validators each run gl.nondet.exec_prompt() independently
-   Each validator may use a different LLM, different reasoning, different weights
+4. Evidence-Grounded Evaluation
+   5 GenLayer validators each grade the fetched data via gl.nondet.exec_prompt()
+   Confidence is HIGH only when real data supports it; NONE when no evidence exists
 
 5. Equivalence Principle Consensus
    gl.eq_principle.prompt_non_comparative() compares subjective assessments
    Validators agree on "equivalent" evaluations, not identical ones
    Outliers are filtered --- this is impossible on deterministic blockchains
 
-6. On-Chain Storage
-   Consensus profile stored as JSON with all 6 dimensions, grades, confidence, reasoning
+6. On-Chain Storage + Fee Collection
+   Consensus profile stored as JSON. Query fee (1000 wei) added to protocol fee pool.
 
-7. Composable Queries
-   Any contract calls get_trust_tier(), get_dimension(), get_trust_score()
-   Each consumer uses only the dimension relevant to them
+7. Stake, Query, or Dispute
+   Any contract queries specific dimensions. Users stake tokens endorsing grades.
+   Disputes trigger re-evaluation with fresh web data --- wrong stakers get slashed.
 ```
 
 ---
@@ -103,6 +107,30 @@ This is the honesty layer. We do not pretend to know everything --- we tell you 
 | **none** | No information available, dimension graded N/A | Complete absence of data for this dimension |
 
 Consumers decide how to use confidence. A DeFi protocol might require `high` confidence on the `defi` dimension. An agent marketplace might accept `medium` on `code`. The protocol provides the data; the consumer sets the threshold.
+
+---
+
+## Economic Model
+
+vouch.fun has a three-layer economic model:
+
+| Mechanism | Amount | Purpose |
+|-----------|--------|---------|
+| **Query Fee** | 1000 wei per vouch/refresh | Sustainable revenue for protocol operations |
+| **Stake-to-Vouch** | 5000 wei minimum | Users endorse specific dimension grades with skin in the game |
+| **Dispute Slashing** | Staked amount | Wrong stakers lose their stake when dispute re-evaluation disagrees |
+
+```python
+# Stake that torvalds deserves an A in code
+stake_vouch("torvalds", "code", "A")  # 5000 wei locked
+
+# Later, someone disputes with fresh evidence
+dispute("torvalds", "grade inflated")
+# --> Validators re-fetch GitHub data + re-grade
+# --> If new grade is C (2+ grades below staked A), stake is slashed
+```
+
+Fees accumulate in the contract's `fee_pool`. Stakes create incentive alignment --- you don't just trust the AI, you put money behind your assessment.
 
 ---
 

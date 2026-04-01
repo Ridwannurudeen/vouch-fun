@@ -133,12 +133,16 @@ export async function readTrustTier(address: string): Promise<string> {
   return String(result);
 }
 
+// Query fee in wei — must match contract QUERY_FEE constant
+export const QUERY_FEE = 1000n;
+export const MIN_STAKE = 5000n;
+
 export async function generateProfile(handle: string): Promise<any> {
   const txHash = await client.writeContract({
     address: contractAddress,
     functionName: "vouch",
     args: [handle],
-    value: 0n,
+    value: QUERY_FEE,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
 }
@@ -148,9 +152,45 @@ export async function refreshProfile(handle: string): Promise<any> {
     address: contractAddress,
     functionName: "refresh",
     args: [handle],
-    value: 0n,
+    value: QUERY_FEE,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
+}
+
+export async function stakeVouch(identifier: string, dimension: string, grade: string, amount: bigint): Promise<any> {
+  const txHash = await client.writeContract({
+    address: contractAddress,
+    functionName: "stake_vouch",
+    args: [identifier, dimension, grade],
+    value: amount >= MIN_STAKE ? amount : MIN_STAKE,
+  });
+  return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
+}
+
+export async function getStakes(identifier: string): Promise<any> {
+  try {
+    const result = await client.readContract({
+      address: contractAddress,
+      functionName: "get_stakes",
+      args: [identifier],
+    });
+    return typeof result === "string" ? JSON.parse(result) : result;
+  } catch {
+    return {};
+  }
+}
+
+export async function getFeePool(): Promise<{ fee_pool: number; query_fee: number; min_stake: number }> {
+  try {
+    const result = await client.readContract({
+      address: contractAddress,
+      functionName: "get_fee_pool",
+      args: [],
+    });
+    const parsed = typeof result === "string" ? JSON.parse(result) : result;
+    if (parsed && typeof parsed.fee_pool === "number") return parsed;
+  } catch {}
+  return { fee_pool: 0, query_fee: 1000, min_stake: 5000 };
 }
 
 export async function getStats(): Promise<{ profile_count: number; query_count: number; dispute_count: number }> {

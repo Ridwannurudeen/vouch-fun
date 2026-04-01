@@ -13,7 +13,10 @@ import {
   readProfileByHandle,
   generateProfile,
   refreshProfile,
+  stakeVouch,
+  getStakes,
   hasFundedAccount,
+  MIN_STAKE,
 } from "../lib/genlayer";
 import type { TrustProfile, DimensionKey } from "../types";
 import { DIMENSIONS, DIMENSION_LABELS } from "../types";
@@ -51,6 +54,10 @@ export default function Profile() {
   const [copied, setCopied] = useState(false);
   const [slow, setSlow] = useState(false);
   const slowTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [stakes, setStakes] = useState<Record<string, any[]>>({});
+  const [staking, setStaking] = useState(false);
+  const [stakeDim, setStakeDim] = useState<DimensionKey>("code");
+  const [stakeGrade, setStakeGrade] = useState("B");
 
   const isAddress = handle?.startsWith("0x") && handle.length === 42;
 
@@ -115,6 +122,30 @@ export default function Profile() {
       setGenerating(false);
     }
   };
+
+  useEffect(() => {
+    if (profile?.identifier) {
+      getStakes(profile.identifier).then(setStakes).catch(() => {});
+    }
+  }, [profile]);
+
+  const handleStake = async () => {
+    if (!profile?.identifier || staking) return;
+    setStaking(true);
+    try {
+      await stakeVouch(profile.identifier, stakeDim, stakeGrade, MIN_STAKE);
+      const s = await getStakes(profile.identifier);
+      setStakes(s);
+    } catch (err: any) {
+      setError(err.message || "Staking failed");
+    } finally {
+      setStaking(false);
+    }
+  };
+
+  const totalStakes = Object.values(stakes).reduce(
+    (sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0
+  );
 
   const handleCopyUrl = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -271,6 +302,63 @@ export default function Profile() {
                   />
                 );
               })}
+            </div>
+
+            {/* Stake section */}
+            <div className="border border-gray-200 rounded-xl p-6 bg-white mb-6">
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">Stake Your Assessment</h3>
+              <p className="text-xs text-gray-500 mb-4">
+                Put skin in the game — stake tokens endorsing a grade. Wrong stakes get slashed on dispute.
+                {totalStakes > 0 && <span className="ml-2 text-indigo-600 font-medium">{totalStakes} active stakes</span>}
+              </p>
+              <div className="flex flex-wrap gap-3 items-end">
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Dimension</label>
+                  <select
+                    value={stakeDim}
+                    onChange={(e) => setStakeDim(e.target.value as DimensionKey)}
+                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white"
+                  >
+                    {DIMENSIONS.map((d) => (
+                      <option key={d} value={d}>{DIMENSION_LABELS[d]}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Grade</label>
+                  <select
+                    value={stakeGrade}
+                    onChange={(e) => setStakeGrade(e.target.value)}
+                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white"
+                  >
+                    {["A","B","C","D","F"].map((g) => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  onClick={handleStake}
+                  disabled={staking || !hasFundedAccount}
+                  className="text-sm px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium
+                             hover:bg-indigo-700 disabled:bg-gray-300 transition-colors"
+                >
+                  {staking ? "Staking..." : `Stake ${MIN_STAKE} wei`}
+                </button>
+              </div>
+              {/* Active stakes */}
+              {totalStakes > 0 && (
+                <div className="mt-4 border-t border-gray-100 pt-3">
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(stakes).map(([dim, entries]) =>
+                      Array.isArray(entries) ? entries.map((s, i) => (
+                        <span key={`${dim}-${i}`} className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded font-mono">
+                          {DIMENSION_LABELS[dim as DimensionKey] || dim}: {s.grade} ({s.amount} wei)
+                        </span>
+                      )) : null
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Related actions */}

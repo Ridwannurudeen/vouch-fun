@@ -48,7 +48,7 @@ function Step({ index, title, description, icon, detail }: StepProps) {
         >
           {icon}
         </motion.div>
-        {index < 4 && (
+        {index < 5 && (
           <motion.div
             className="w-0.5 h-16 bg-indigo-100 mt-2"
             initial={{ scaleY: 0 }}
@@ -85,15 +85,24 @@ const STEPS: StepProps[] = [
   },
   {
     index: 1,
-    title: "5 AI validators evaluate 6 dimensions",
+    title: "Validators fetch REAL web data",
     description:
-      "Each validator independently synthesizes trust across code, on-chain, social, governance, DeFi, and identity. Each dimension gets an A-F grade with a confidence level (high/medium/low/none).",
-    icon: "\u{1F916}",
+      "Each validator uses gl.nondet.web.render() to fetch real GitHub API data, Etherscan pages, and ENS records. No hallucination — grades are based on actual evidence.",
+    icon: "\u{1F310}",
     detail:
-      "V1: code=A(high), social=A(high) | V2: code=A(high), social=B(high) | ...",
+      'web.render("api.github.com/users/torvalds") \u2192 { repos: 7, stars: 180k, ... }',
   },
   {
     index: 2,
+    title: "AI grades 6 dimensions from evidence",
+    description:
+      "With real data in hand, each validator grades code, on-chain, social, governance, DeFi, and identity. Confidence is high only when backed by fetched data.",
+    icon: "\u{1F916}",
+    detail:
+      "V1: code=A(high), onchain=F(high) | V2: code=A(high), onchain=F(high) | ...",
+  },
+  {
+    index: 3,
     title: "Equivalence Principle reaches consensus",
     description:
       "GenLayer's Optimistic Democracy compares all assessments. If they're semantically equivalent (not identical), consensus is reached. Disagreements trigger re-evaluation.",
@@ -102,22 +111,22 @@ const STEPS: StepProps[] = [
       "eq_principle.prompt_non_comparative(eval_fn, criteria=...)",
   },
   {
-    index: 3,
+    index: 4,
     title: "6-dimension profile stored on-chain",
     description:
-      "The consensus profile with grades, confidence levels, reasoning, and key signals for all 6 dimensions is stored on GenLayer. No API keys, no rate limits.",
+      "The consensus profile with grades, confidence levels, reasoning, and key signals for all 6 dimensions is stored on GenLayer. Query fees accumulate in the protocol fee pool.",
     icon: "\u{1F512}",
     detail:
-      '{ code: "A"(high), onchain: "A"(high), social: "B"(medium), score: 91 } \u2192 on-chain',
+      '{ code: "A"(high), onchain: "F"(high), score: 48 } \u2192 on-chain | fee: 1000 wei \u2192 pool',
   },
   {
-    index: 4,
-    title: "Any contract queries specific dimensions",
+    index: 5,
+    title: "Stake, query, or dispute",
     description:
-      "Other contracts query overall trust, specific dimensions, numeric scores, or confidence levels. Gate by code grade for dev tools, DeFi experience for protocols, governance for DAOs.",
+      "Other contracts query dimensions. Users stake tokens endorsing grades. Disputes trigger re-evaluation with fresh data — wrong stakers get slashed.",
     icon: "\u{1F527}",
     detail:
-      'dim = vouch.get_dimension(addr, "code")\nif grade >= "B" and confidence != "none": allow()',
+      'stake_vouch("torvalds", "code", "A") | dispute("torvalds", "grade wrong")',
   },
 ];
 
@@ -129,8 +138,8 @@ export default function HowItWorks() {
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold text-gray-900 mb-3">How It Works</h1>
           <p className="text-lg text-gray-500 max-w-xl mx-auto">
-            vouch.fun uses GenLayer's AI consensus to synthesize 6-dimension trust profiles
-            that no single entity controls. Here's how.
+            vouch.fun fetches real web data, then uses GenLayer's AI consensus to synthesize
+            6-dimension trust profiles. Evidence-grounded, stake-backed, fully on-chain.
           </p>
         </div>
 

@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { getStats } from "../lib/genlayer";
 
 export default function StatsBar() {
-  const [stats, setStats] = useState({ profile_count: 0, query_count: 0, dispute_count: 0 });
+  const [stats, setStats] = useState({ profile_count: 0, query_count: 0, dispute_count: 0, fee_pool: 0 });
 
   useEffect(() => {
-    getStats().then(setStats).catch(() => {});
+    getStats().then((s) => setStats({ ...s, fee_pool: (s as any).fee_pool || 0 })).catch(() => {});
   }, []);
 
   return (
@@ -13,6 +13,7 @@ export default function StatsBar() {
       <span>{stats.profile_count} profiles</span>
       <span>{stats.query_count} queries</span>
       <span>{stats.dispute_count} disputes</span>
+      {stats.fee_pool > 0 && <span>{stats.fee_pool} wei fees</span>}
     </div>
   );
 }

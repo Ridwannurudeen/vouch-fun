@@ -122,13 +122,16 @@ const API_METHODS = [
   { sig: "get_profile_by_handle(identifier) -> str", desc: "Returns: Full profile resolved by GitHub/ENS/Twitter handle", type: "read" as const },
   { sig: "lookup_address(identifier) -> str", desc: "Returns: Wallet address for an identifier", type: "read" as const },
   { sig: "get_all_handles() -> str", desc: "Returns: JSON array of all registered identifiers", type: "read" as const },
-  { sig: "get_stats() -> str", desc: "Returns: { profile_count, query_count, dispute_count }", type: "read" as const },
+  { sig: "get_stats() -> str", desc: "Returns: { profile_count, query_count, dispute_count, fee_pool }", type: "read" as const },
   { sig: "get_comparison(id_a, id_b) -> str", desc: "Returns: Stored comparison result", type: "read" as const },
-  { sig: "vouch(identifier)", desc: "Generate a new 6-dimension trust profile via AI consensus (requires GEN)", type: "write" as const },
-  { sig: "refresh(identifier)", desc: "Re-evaluate an existing profile (requires GEN)", type: "write" as const },
-  { sig: "dispute(identifier, reason)", desc: "Challenge a trust score for re-evaluation (requires GEN)", type: "write" as const },
-  { sig: "compare(id_a, id_b)", desc: "AI consensus comparison of two profiles (requires GEN)", type: "write" as const },
-  { sig: "seed_profile(identifier, profile_json)", desc: "Seed a pre-computed profile (requires GEN)", type: "write" as const },
+  { sig: "get_stakes(identifier) -> str", desc: "Returns: Active stakes per dimension for an identifier", type: "read" as const },
+  { sig: "get_fee_pool() -> str", desc: "Returns: { fee_pool, query_fee, min_stake }", type: "read" as const },
+  { sig: "vouch(identifier)", desc: "Generate trust profile from REAL web data via AI consensus (fee: 1000 wei)", type: "write" as const },
+  { sig: "refresh(identifier)", desc: "Re-evaluate with fresh web data (fee: 1000 wei)", type: "write" as const },
+  { sig: "stake_vouch(identifier, dimension, grade)", desc: "Stake tokens endorsing a grade — slashed on dispute (min: 5000 wei)", type: "write" as const },
+  { sig: "dispute(identifier, reason)", desc: "Challenge a score — triggers re-evaluation + stake slashing", type: "write" as const },
+  { sig: "compare(id_a, id_b)", desc: "AI consensus comparison of two profiles", type: "write" as const },
+  { sig: "seed_profile(identifier, profile_json)", desc: "Seed a pre-computed profile", type: "write" as const },
 ];
 
 export default function Integrate() {
