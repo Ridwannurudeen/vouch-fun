@@ -77,47 +77,47 @@ function Step({ index, title, description, icon, detail }: StepProps) {
 const STEPS: StepProps[] = [
   {
     index: 0,
-    title: "You search a GitHub handle",
+    title: "Enter any identifier",
     description:
-      "Enter any GitHub username. vouch.fun submits it to GenLayer's network of AI validators for independent evaluation.",
+      "Search a GitHub handle, ENS name, wallet address, or @twitter. vouch.fun detects the type and submits it to GenLayer's AI validator network.",
     icon: "\u{1F50D}",
-    detail: 'vouch("torvalds") \u2192 submitted to 5 validators',
+    detail: 'vouch("torvalds") \u2192 type: github \u2192 submitted to 5 validators',
   },
   {
     index: 1,
-    title: "5 AI validators evaluate independently",
+    title: "5 AI validators evaluate 6 dimensions",
     description:
-      "Each validator runs its own LLM instance to analyze the developer's GitHub activity and on-chain presence. No validator sees another's work.",
+      "Each validator independently synthesizes trust across code, on-chain, social, governance, DeFi, and identity. Each dimension gets an A-F grade with a confidence level (high/medium/low/none).",
     icon: "\u{1F916}",
     detail:
-      "Validator 1: grade A (45k stars) | Validator 2: grade A (520 commits) | ...",
+      "V1: code=A(high), social=A(high) | V2: code=A(high), social=B(high) | ...",
   },
   {
     index: 2,
-    title: "Validators compare via Equivalence Principle",
+    title: "Equivalence Principle reaches consensus",
     description:
-      "GenLayer's Optimistic Democracy consensus compares all assessments. If they're equivalent (not identical, but semantically aligned), consensus is reached.",
+      "GenLayer's Optimistic Democracy compares all assessments. If they're semantically equivalent (not identical), consensus is reached. Disagreements trigger re-evaluation.",
     icon: "\u2696\uFE0F",
     detail:
       "eq_principle.prompt_non_comparative(eval_fn, criteria=...)",
   },
   {
     index: 3,
-    title: "Consensus reached, profile stored on-chain",
+    title: "6-dimension profile stored on-chain",
     description:
-      "The agreed-upon trust profile is stored permanently on GenLayer. Anyone can read it \u2014 no API keys, no rate limits, no centralized authority.",
+      "The consensus profile with grades, confidence levels, reasoning, and key signals for all 6 dimensions is stored on GenLayer. No API keys, no rate limits.",
     icon: "\u{1F512}",
     detail:
-      '{ trust_tier: "TRUSTED", code: "A", onchain: "A" } \u2192 on-chain',
+      '{ code: "A"(high), onchain: "A"(high), social: "B"(medium), score: 91 } \u2192 on-chain',
   },
   {
     index: 4,
-    title: "Any contract queries trust in one line",
+    title: "Any contract queries specific dimensions",
     description:
-      "Other Intelligent Contracts call get_trust_tier(address) to gate actions based on reputation. Trust becomes composable infrastructure.",
+      "Other contracts query overall trust, specific dimensions, numeric scores, or confidence levels. Gate by code grade for dev tools, DeFi experience for protocols, governance for DAOs.",
     icon: "\u{1F527}",
     detail:
-      'tier = gl.ContractAt(vouch).get_trust_tier(addr)\nif tier == "TRUSTED": allow()',
+      'dim = vouch.get_dimension(addr, "code")\nif grade >= "B" and confidence != "none": allow()',
   },
 ];
 
@@ -129,7 +129,7 @@ export default function HowItWorks() {
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold text-gray-900 mb-3">How It Works</h1>
           <p className="text-lg text-gray-500 max-w-xl mx-auto">
-            vouch.fun uses GenLayer's AI consensus to create trust profiles
+            vouch.fun uses GenLayer's AI consensus to synthesize 6-dimension trust profiles
             that no single entity controls. Here's how.
           </p>
         </div>

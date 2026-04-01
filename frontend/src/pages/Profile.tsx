@@ -5,6 +5,7 @@ import Footer from "../components/Footer";
 import TrustBadge from "../components/TrustBadge";
 import GradeCard from "../components/GradeCard";
 import GradeBar from "../components/GradeBar";
+import RadarChart from "../components/RadarChart";
 import ConsensusAnimation from "../components/ConsensusAnimation";
 import DisputeModal from "../components/DisputeModal";
 import {
@@ -14,7 +15,8 @@ import {
   refreshProfile,
   hasFundedAccount,
 } from "../lib/genlayer";
-import type { TrustProfile } from "../types";
+import type { TrustProfile, DimensionKey } from "../types";
+import { DIMENSIONS, DIMENSION_LABELS } from "../types";
 
 function ProfileSkeleton() {
   return (
@@ -25,36 +27,15 @@ function ProfileSkeleton() {
         <div className="h-4 bg-gray-100 rounded w-80 mx-auto mb-2" />
         <div className="h-4 bg-gray-100 rounded w-64 mx-auto" />
       </div>
-      <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
-        <div className="h-4 bg-gray-200 rounded w-32 mb-4" />
-        <div className="space-y-3">
-          <div className="h-6 bg-gray-100 rounded" />
-          <div className="h-6 bg-gray-100 rounded" />
-        </div>
-      </div>
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <div className="h-5 bg-gray-200 rounded w-32 mb-4" />
-          <div className="grid grid-cols-2 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i}>
-                <div className="h-3 bg-gray-100 rounded w-16 mb-1" />
-                <div className="h-5 bg-gray-100 rounded w-12" />
-              </div>
-            ))}
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="bg-white border border-gray-200 rounded-xl p-5">
+            <div className="h-5 bg-gray-200 rounded w-32 mb-3" />
+            <div className="h-8 bg-gray-100 rounded w-12 mb-3" />
+            <div className="h-3 bg-gray-100 rounded w-full mb-2" />
+            <div className="h-3 bg-gray-100 rounded w-2/3" />
           </div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <div className="h-5 bg-gray-200 rounded w-32 mb-4" />
-          <div className="grid grid-cols-2 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i}>
-                <div className="h-3 bg-gray-100 rounded w-16 mb-1" />
-                <div className="h-5 bg-gray-100 rounded w-12" />
-              </div>
-            ))}
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
@@ -94,7 +75,6 @@ export default function Profile() {
       .finally(() => setLoading(false));
   }, [handle, isAddress]);
 
-  // Start/clear slow timer when generating state changes
   useEffect(() => {
     if (generating) {
       setSlow(false);
@@ -113,9 +93,7 @@ export default function Profile() {
     try {
       await generateProfile(handle);
       const p = await readProfileByHandle(handle);
-      if (p && p.overall) {
-        setProfile(p);
-      }
+      if (p && p.overall) setProfile(p);
     } catch (err: any) {
       setError(err.message || "Failed to generate profile");
     } finally {
@@ -130,9 +108,7 @@ export default function Profile() {
     try {
       await refreshProfile(handle);
       const p = await readProfileByHandle(handle);
-      if (p && p.overall) {
-        setProfile(p);
-      }
+      if (p && p.overall) setProfile(p);
     } catch (err: any) {
       setError(err.message || "Failed to refresh profile");
     } finally {
@@ -146,8 +122,7 @@ export default function Profile() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const code = profile?.code_activity;
-  const onchain = profile?.onchain_activity;
+  const profileId = profile?.identifier || (profile as any)?.handle || handle || "";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -166,11 +141,22 @@ export default function Profile() {
           </div>
         ) : profile ? (
           <>
+            {/* Header */}
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold font-mono text-gray-900 mb-2">
-                {profile.handle}
+                {profileId}
               </h1>
               <TrustBadge tier={profile.overall.trust_tier} />
+
+              {/* Trust score */}
+              {profile.overall.trust_score != null && (
+                <div className="mt-3">
+                  <span className="text-4xl font-bold text-gray-900 font-mono">
+                    {profile.overall.trust_score}
+                  </span>
+                  <span className="text-sm text-gray-400 ml-1">/100</span>
+                </div>
+              )}
 
               {/* Verified badge */}
               <div className="mt-2">
@@ -180,14 +166,31 @@ export default function Profile() {
                   </svg>
                   Verified by AI Consensus
                 </span>
+                {profile.identifier_type && (
+                  <span className="ml-2 text-xs text-gray-400 font-mono">
+                    {profile.identifier_type}
+                  </span>
+                )}
               </div>
 
               <p className="text-gray-600 mt-3 max-w-lg mx-auto">
                 {profile.overall.summary}
               </p>
-              <div className="text-xs text-gray-400 mt-2 font-mono">
-                Sources: {profile.sources_scraped?.join(", ")}
-                {profile.sources_scraped?.includes("seed") && (
+
+              {/* Top signals */}
+              {profile.overall.top_signals && profile.overall.top_signals.length > 0 && (
+                <div className="flex flex-wrap gap-2 justify-center mt-3">
+                  {profile.overall.top_signals.map((signal, i) => (
+                    <span key={i} className="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-medium">
+                      {signal}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="text-xs text-gray-400 mt-3 font-mono">
+                Sources: {(profile.sources || profile.sources_scraped || []).join(", ")}
+                {(profile.sources || profile.sources_scraped || []).includes("seed") && (
                   <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs">
                     Seeded Profile
                   </span>
@@ -196,6 +199,13 @@ export default function Profile() {
               {profile.vouched_by && (
                 <div className="text-xs text-gray-400 mt-1 font-mono">
                   Vouched by: {profile.vouched_by}
+                </div>
+              )}
+
+              {/* Dispute notice */}
+              {profile.disputed && (
+                <div className="mt-3 inline-flex items-center gap-1 text-xs text-red-600 bg-red-50 px-3 py-1 rounded-full">
+                  Disputed: {profile.dispute_reason}
                 </div>
               )}
 
@@ -229,44 +239,38 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Grade bars */}
-            {code && onchain && (
-              <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">Grade Overview</h3>
-                <div className="space-y-3">
-                  <GradeBar label="Code" grade={code.grade} />
-                  <GradeBar label="On-chain" grade={onchain.grade} />
-                </div>
-              </div>
-            )}
+            {/* Radar chart */}
+            <div className="border border-gray-200 rounded-xl p-6 bg-white mb-6">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2 text-center">Trust Dimensions</h3>
+              <RadarChart profileA={profile} />
+            </div>
 
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
-              {code && (
-                <GradeCard
-                  title="Code Activity"
-                  grade={code.grade}
-                  reasoning={code.reasoning || ""}
-                  stats={[
-                    { label: "Repos", value: code.repos ?? "-" },
-                    { label: "Commits (year)", value: code.commits_last_year ?? "-" },
-                    { label: "Stars", value: code.stars_received ?? "-" },
-                    { label: "Languages", value: code.languages?.join(", ") || "-" },
-                  ]}
-                />
-              )}
-              {onchain && (
-                <GradeCard
-                  title="On-Chain Activity"
-                  grade={onchain.grade}
-                  reasoning={onchain.reasoning || ""}
-                  stats={[
-                    { label: "Transactions", value: onchain.tx_count ?? "-" },
-                    { label: "Account age (days)", value: onchain.first_tx_age_days ?? "-" },
-                    { label: "Contracts deployed", value: onchain.contracts_deployed ?? "-" },
-                    { label: "Suspicious", value: onchain.suspicious_patterns ? "Yes" : "No" },
-                  ]}
-                />
-              )}
+            {/* Grade bars overview */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">Grade Overview</h3>
+              <div className="space-y-3">
+                {DIMENSIONS.map((dim: DimensionKey) => {
+                  const d = profile[dim];
+                  if (!d) return null;
+                  return <GradeBar key={dim} label={DIMENSION_LABELS[dim]} grade={d.grade} />;
+                })}
+              </div>
+            </div>
+
+            {/* Dimension cards */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+              {DIMENSIONS.map((dim: DimensionKey) => {
+                const d = profile[dim];
+                if (!d) return null;
+                return (
+                  <GradeCard
+                    key={dim}
+                    title={DIMENSION_LABELS[dim]}
+                    dimension={dim}
+                    score={d}
+                  />
+                );
+              })}
             </div>
 
             {/* Related actions */}
@@ -347,7 +351,6 @@ export default function Profile() {
               </div>
             )}
 
-            {/* Dispute modal */}
             {handle && (
               <DisputeModal
                 handle={handle}
@@ -366,7 +369,7 @@ export default function Profile() {
             <h2 className="text-2xl font-bold text-gray-900 mb-2 font-mono">{handle}</h2>
             {isAddress ? (
               <p className="text-gray-500">
-                No profile found for this address. The owner must vouch their GitHub handle first.
+                No profile found for this address. The owner must vouch their identifier first.
               </p>
             ) : (
               <>

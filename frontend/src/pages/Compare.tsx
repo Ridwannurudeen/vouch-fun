@@ -6,7 +6,8 @@ import TrustBadge from "../components/TrustBadge";
 import GradeBar from "../components/GradeBar";
 import RadarChart from "../components/RadarChart";
 import { readProfileByHandle } from "../lib/genlayer";
-import type { TrustProfile } from "../types";
+import type { TrustProfile, DimensionKey } from "../types";
+import { DIMENSIONS, DIMENSION_LABELS } from "../types";
 
 export default function Compare() {
   const { a, b } = useParams<{ a?: string; b?: string }>();
@@ -45,13 +46,16 @@ export default function Compare() {
     }
   };
 
+  const idA = profileA?.identifier || (profileA as any)?.handle || handleA;
+  const idB = profileB?.identifier || (profileB as any)?.handle || handleB;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="mx-auto max-w-5xl px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Compare Profiles</h1>
-          <p className="text-gray-500">Side-by-side trust assessment comparison</p>
+          <p className="text-gray-500">Side-by-side 6-dimension trust comparison</p>
         </div>
 
         {/* Search inputs */}
@@ -60,7 +64,7 @@ export default function Compare() {
             type="text"
             value={handleA}
             onChange={(e) => setHandleA(e.target.value)}
-            placeholder="First handle"
+            placeholder="First identifier"
             className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl font-mono
                        focus:border-gray-900 focus:outline-none"
           />
@@ -69,7 +73,7 @@ export default function Compare() {
             type="text"
             value={handleB}
             onChange={(e) => setHandleB(e.target.value)}
-            placeholder="Second handle"
+            placeholder="Second identifier"
             className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl font-mono
                        focus:border-gray-900 focus:outline-none"
           />
@@ -96,25 +100,41 @@ export default function Compare() {
             <div className="grid md:grid-cols-2 gap-6 mb-8">
               <div className="text-center border border-gray-200 rounded-xl p-6 bg-white">
                 <h3 className="text-xl font-bold font-mono text-gray-900 mb-2">
-                  {profileA.handle}
+                  {idA}
                 </h3>
                 <TrustBadge tier={profileA.overall.trust_tier} />
+                {profileA.overall.trust_score != null && (
+                  <div className="mt-2 text-2xl font-bold font-mono text-gray-900">
+                    {profileA.overall.trust_score}<span className="text-sm text-gray-400">/100</span>
+                  </div>
+                )}
                 <p className="text-sm text-gray-500 mt-3">{profileA.overall.summary}</p>
                 <div className="mt-4 space-y-2">
-                  <GradeBar label="Code" grade={profileA.code_activity.grade} />
-                  <GradeBar label="On-chain" grade={profileA.onchain_activity.grade} />
+                  {DIMENSIONS.map((dim: DimensionKey) => {
+                    const d = profileA[dim];
+                    if (!d) return null;
+                    return <GradeBar key={dim} label={DIMENSION_LABELS[dim]} grade={d.grade} />;
+                  })}
                 </div>
               </div>
 
               <div className="text-center border border-gray-200 rounded-xl p-6 bg-white">
                 <h3 className="text-xl font-bold font-mono text-gray-900 mb-2">
-                  {profileB.handle}
+                  {idB}
                 </h3>
                 <TrustBadge tier={profileB.overall.trust_tier} />
+                {profileB.overall.trust_score != null && (
+                  <div className="mt-2 text-2xl font-bold font-mono text-gray-900">
+                    {profileB.overall.trust_score}<span className="text-sm text-gray-400">/100</span>
+                  </div>
+                )}
                 <p className="text-sm text-gray-500 mt-3">{profileB.overall.summary}</p>
                 <div className="mt-4 space-y-2">
-                  <GradeBar label="Code" grade={profileB.code_activity.grade} />
-                  <GradeBar label="On-chain" grade={profileB.onchain_activity.grade} />
+                  {DIMENSIONS.map((dim: DimensionKey) => {
+                    const d = profileB[dim];
+                    if (!d) return null;
+                    return <GradeBar key={dim} label={DIMENSION_LABELS[dim]} grade={d.grade} />;
+                  })}
                 </div>
               </div>
             </div>
@@ -122,44 +142,52 @@ export default function Compare() {
             {/* Radar chart */}
             <div className="border border-gray-200 rounded-xl p-6 bg-white mb-8">
               <h3 className="text-lg font-bold text-gray-900 mb-4 text-center">
-                Metric Comparison
+                6-Dimension Comparison
               </h3>
               <RadarChart profileA={profileA} profileB={profileB} />
             </div>
 
-            {/* Stats comparison table */}
+            {/* Dimension comparison table */}
             <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-4 py-3 text-left text-gray-500 font-medium">Metric</th>
-                    <th className="px-4 py-3 text-right text-indigo-600 font-mono">
-                      {profileA.handle}
-                    </th>
-                    <th className="px-4 py-3 text-right text-amber-600 font-mono">
-                      {profileB.handle}
-                    </th>
+                    <th className="px-4 py-3 text-left text-gray-500 font-medium">Dimension</th>
+                    <th className="px-4 py-3 text-center text-indigo-600 font-mono">{idA}</th>
+                    <th className="px-4 py-3 text-center text-amber-600 font-mono">{idB}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    ["Repos", profileA.code_activity.repos, profileB.code_activity.repos],
-                    ["Commits/yr", profileA.code_activity.commits_last_year, profileB.code_activity.commits_last_year],
-                    ["Stars", profileA.code_activity.stars_received, profileB.code_activity.stars_received],
-                    ["Tx Count", profileA.onchain_activity.tx_count, profileB.onchain_activity.tx_count],
-                    ["Account Age (days)", profileA.onchain_activity.first_tx_age_days, profileB.onchain_activity.first_tx_age_days],
-                    ["Contracts Deployed", profileA.onchain_activity.contracts_deployed, profileB.onchain_activity.contracts_deployed],
-                  ].map(([label, valA, valB]) => (
-                    <tr key={label as string} className="border-b border-gray-100">
-                      <td className="px-4 py-3 text-gray-600">{label}</td>
-                      <td className="px-4 py-3 text-right font-mono text-gray-900">
-                        {typeof valA === "number" ? valA.toLocaleString() : valA}
-                      </td>
-                      <td className="px-4 py-3 text-right font-mono text-gray-900">
-                        {typeof valB === "number" ? valB.toLocaleString() : valB}
-                      </td>
-                    </tr>
-                  ))}
+                  {DIMENSIONS.map((dim: DimensionKey) => {
+                    const dA = profileA[dim];
+                    const dB = profileB[dim];
+                    return (
+                      <tr key={dim} className="border-b border-gray-100">
+                        <td className="px-4 py-3 text-gray-600 font-medium">{DIMENSION_LABELS[dim]}</td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="font-mono font-bold text-gray-900">{dA?.grade || "N/A"}</span>
+                          {dA?.confidence && (
+                            <span className="ml-1 text-xs text-gray-400">({dA.confidence})</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="font-mono font-bold text-gray-900">{dB?.grade || "N/A"}</span>
+                          {dB?.confidence && (
+                            <span className="ml-1 text-xs text-gray-400">({dB.confidence})</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  <tr className="bg-gray-50 font-bold">
+                    <td className="px-4 py-3 text-gray-900">Overall Score</td>
+                    <td className="px-4 py-3 text-center font-mono text-indigo-600">
+                      {profileA.overall.trust_score}
+                    </td>
+                    <td className="px-4 py-3 text-center font-mono text-amber-600">
+                      {profileB.overall.trust_score}
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -173,30 +201,19 @@ export default function Compare() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
               </svg>
             </div>
-            <p className="text-gray-500 font-medium mb-2">Compare two developers side by side</p>
-            <p className="text-sm text-gray-400 mb-6">See how trust profiles stack up across code activity and on-chain presence</p>
+            <p className="text-gray-500 font-medium mb-2">Compare two identities side by side</p>
+            <p className="text-sm text-gray-400 mb-6">See how trust profiles stack up across all 6 dimensions</p>
             <div className="flex flex-wrap gap-3 justify-center">
               <button
                 onClick={() => {
                   setHandleA("vbuterin");
-                  setHandleB("gakonst");
-                  navigate("/compare/vbuterin/gakonst");
+                  setHandleB("torvalds");
+                  navigate("/compare/vbuterin/torvalds");
                 }}
                 className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-mono
                            hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
               >
-                vbuterin <span className="text-gray-400">vs</span> gakonst
-              </button>
-              <button
-                onClick={() => {
-                  setHandleA("torvalds");
-                  setHandleB("vbuterin");
-                  navigate("/compare/torvalds/vbuterin");
-                }}
-                className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-mono
-                           hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
-              >
-                torvalds <span className="text-gray-400">vs</span> vbuterin
+                vbuterin <span className="text-gray-400">vs</span> torvalds
               </button>
               <button
                 onClick={() => {
@@ -208,6 +225,17 @@ export default function Compare() {
                            hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
               >
                 haydenzadams <span className="text-gray-400">vs</span> samczsun
+              </button>
+              <button
+                onClick={() => {
+                  setHandleA("gakonst");
+                  setHandleB("ridwannurudeen");
+                  navigate("/compare/gakonst/ridwannurudeen");
+                }}
+                className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-mono
+                           hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
+              >
+                gakonst <span className="text-gray-400">vs</span> ridwannurudeen
               </button>
             </div>
           </div>

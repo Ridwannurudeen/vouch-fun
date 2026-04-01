@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 const KNOWN_HANDLES = [
   "vbuterin", "gakonst", "ridwannurudeen", "torvalds",
-  "andresz1", "yyx990803", "haydenzadams", "samczsun",
+  "haydenzadams", "samczsun",
 ];
 
 export default function SearchBar() {
@@ -51,7 +51,7 @@ export default function SearchBar() {
           }}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          placeholder="Enter GitHub handle or wallet address"
+          placeholder="GitHub handle, ENS name, wallet, or @twitter"
           className="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-xl
                      focus:border-gray-900 focus:outline-none transition-colors
                      font-mono placeholder:font-sans placeholder:text-gray-400"

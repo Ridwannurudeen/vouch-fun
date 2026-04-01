@@ -5,126 +5,130 @@ import Footer from "../components/Footer";
 import { contractAddress } from "../lib/genlayer";
 
 const PYTHON_EXAMPLE = `# Inside your GenLayer contract:
-import gl
+from genlayer import *
+import json
 
 class MyContract(gl.Contract):
     vouch_address: str  # Set to deployed VouchProtocol address
 
     @gl.public.write
     def do_something(self, user_address: str):
-        # One line to check trust before allowing action
-        tier = gl.ContractAt(self.vouch_address).get_trust_tier(user_address)
-        if tier == "LOW" or tier == "UNKNOWN":
-            raise Exception("User does not meet trust requirements")
-        # Proceed with action...`;
+        vouch = gl.ContractAt(Address(self.vouch_address))
+
+        # Check overall trust tier
+        tier = str(vouch.get_trust_tier(user_address))
+        if tier in ("LOW", "UNKNOWN"):
+            raise Exception("Insufficient trust")
+
+        # Check specific dimension (code, onchain, social, governance, defi, identity)
+        code_raw = str(vouch.get_dimension(user_address, "code"))
+        code = json.loads(code_raw)
+        if code.get("grade") == "F":
+            raise Exception("Code reputation too low")
+
+        # Check numeric score (0-100)
+        score = int(str(vouch.get_trust_score(user_address)))
+        if score < 50:
+            raise Exception("Trust score below threshold")`;
 
 const JS_EXAMPLE = `import { createClient } from "genlayer-js";
 import { testnetBradbury } from "genlayer-js/chains";
 
 const client = createClient({ chain: testnetBradbury });
+const VOUCH = "0x_VOUCH_CONTRACT_ADDRESS";
 
-// Read trust tier by address (free, no gas)
+// Read trust tier (free, no gas)
 const tier = await client.readContract({
-  address: "0x_VOUCH_CONTRACT_ADDRESS",
+  address: VOUCH,
   functionName: "get_trust_tier",
-  args: ["0x_RECIPIENT_ADDRESS"],
+  args: ["0x_ADDRESS"],
 });
 
-// Read full profile by handle (free, no gas)
-const profile = await client.readContract({
-  address: "0x_VOUCH_CONTRACT_ADDRESS",
-  functionName: "get_profile_by_handle",
-  args: ["torvalds"],
+// Read specific dimension (free, no gas)
+const codeDim = await client.readContract({
+  address: VOUCH,
+  functionName: "get_dimension",
+  args: ["0x_ADDRESS", "code"],
+});
+
+// Read numeric trust score (free, no gas)
+const score = await client.readContract({
+  address: VOUCH,
+  functionName: "get_trust_score",
+  args: ["0x_ADDRESS"],
+});
+
+// Read confidence level for a dimension
+const confidence = await client.readContract({
+  address: VOUCH,
+  functionName: "get_confidence",
+  args: ["0x_ADDRESS", "defi"],
 });`;
 
-const COMPOSABILITY_EXAMPLE = `# AgentRegistry: gate agent registration by trust score
-import gl
+const TRUSTGATE_EXAMPLE = `# TrustGate: dimension-gated registration (included in repo)
+from genlayer import *
+import json
 
-class AgentRegistry(gl.Contract):
+class TrustGate(gl.Contract):
     vouch_address: str
-    agents: TreeMap[Address, str]
+    required_dimension: str   # e.g. "code"
+    min_grade: str            # e.g. "B"
+
+    def __init__(self, vouch_address, dimension, min_grade):
+        self.vouch_address = vouch_address
+        self.required_dimension = dimension
+        self.min_grade = min_grade
 
     @gl.public.write
-    def register_agent(self, agent_name: str):
-        tier = gl.ContractAt(self.vouch_address).get_trust_tier(gl.message.sender_account)
-        if tier in ("LOW", "UNKNOWN"):
-            raise Exception("Insufficient trust to register as agent")
-        self.agents[gl.message.sender_account] = agent_name`;
+    def register(self, name: str) -> str:
+        vouch = gl.ContractAt(Address(self.vouch_address))
+        dim = json.loads(str(vouch.get_dimension(
+            str(gl.message.sender_account), self.required_dimension
+        )))
+        grade = dim.get("grade", "N/A")
+        if grade_val(grade) < grade_val(self.min_grade):
+            raise Exception(f"Need {self.min_grade}+ in {self.required_dimension}")
+        # Register user...`;
 
 const USE_CASES = [
   {
-    app: "Rally",
-    use: "Check creator trust before accepting campaign applications",
-    call: 'get_trust_tier(creator_address) -> reject if LOW/UNKNOWN',
+    app: "Agent Marketplace",
+    use: "Gate agent registration by code dimension grade",
+    call: 'get_dimension(addr, "code") -> reject if grade < B',
   },
   {
-    app: "MergeProof",
-    use: "Filter code reviewers by reputation",
-    call: 'get_profile(reviewer_address) -> check code_activity.grade',
+    app: "DeFi Protocol",
+    use: "Check DeFi experience before large swaps",
+    call: 'get_dimension(addr, "defi") -> check confidence level',
   },
   {
-    app: "Internet Court",
-    use: "Weight party credibility in disputes",
-    call: 'get_profile(party_address) -> factor overall.trust_tier into verdict',
+    app: "DAO Governance",
+    use: "Weight voting power by governance dimension",
+    call: 'get_dimension(addr, "governance") -> adjust vote weight',
+  },
+  {
+    app: "Social dApp",
+    use: "Filter content creators by social reputation",
+    call: 'get_dimension(addr, "social") -> check grade >= C',
   },
 ];
 
 const API_METHODS = [
-  {
-    sig: "get_trust_tier(address: str) -> str",
-    desc: "Returns: TRUSTED | MODERATE | LOW | UNKNOWN",
-    type: "read" as const,
-  },
-  {
-    sig: "get_profile(address: str) -> str",
-    desc: "Returns: Full JSON profile with grades, reasoning, and data (by address)",
-    type: "read" as const,
-  },
-  {
-    sig: "get_profile_by_handle(handle: str) -> str",
-    desc: "Returns: Full JSON profile resolved by GitHub handle",
-    type: "read" as const,
-  },
-  {
-    sig: "lookup_address(handle: str) -> str",
-    desc: "Returns: Wallet address associated with a GitHub handle",
-    type: "read" as const,
-  },
-  {
-    sig: "get_stats() -> str",
-    desc: 'Returns: { "profile_count": int, "query_count": int, "dispute_count": int }',
-    type: "read" as const,
-  },
-  {
-    sig: "get_all_handles() -> str",
-    desc: "Returns: JSON array of all registered GitHub handles",
-    type: "read" as const,
-  },
-  {
-    sig: "get_comparison(handle_a: str, handle_b: str) -> str",
-    desc: "Returns: Stored comparison result with summary, winner, and reasoning",
-    type: "read" as const,
-  },
-  {
-    sig: "vouch(handle: str)",
-    desc: "Triggers AI consensus to generate a new trust profile (requires GEN for gas)",
-    type: "write" as const,
-  },
-  {
-    sig: "refresh(handle: str)",
-    desc: "Re-evaluates an existing profile via AI consensus (requires GEN for gas)",
-    type: "write" as const,
-  },
-  {
-    sig: "dispute(handle: str, reason: str)",
-    desc: "Challenges a trust score for re-evaluation (requires GEN for gas)",
-    type: "write" as const,
-  },
-  {
-    sig: "compare(handle_a: str, handle_b: str)",
-    desc: "Triggers AI consensus comparison of two profiles (requires GEN for gas)",
-    type: "write" as const,
-  },
+  { sig: "get_trust_tier(address) -> str", desc: "Returns: TRUSTED | MODERATE | LOW | UNKNOWN", type: "read" as const },
+  { sig: "get_trust_score(address) -> u32", desc: "Returns: 0-100 numeric trust score", type: "read" as const },
+  { sig: "get_dimension(address, dimension) -> str", desc: "Returns: JSON with grade, confidence, reasoning, key_signals for one dimension", type: "read" as const },
+  { sig: "get_confidence(address, dimension) -> str", desc: "Returns: high | medium | low | none", type: "read" as const },
+  { sig: "get_profile(address) -> str", desc: "Returns: Full JSON profile with all 6 dimensions + overall", type: "read" as const },
+  { sig: "get_profile_by_handle(identifier) -> str", desc: "Returns: Full profile resolved by GitHub/ENS/Twitter handle", type: "read" as const },
+  { sig: "lookup_address(identifier) -> str", desc: "Returns: Wallet address for an identifier", type: "read" as const },
+  { sig: "get_all_handles() -> str", desc: "Returns: JSON array of all registered identifiers", type: "read" as const },
+  { sig: "get_stats() -> str", desc: "Returns: { profile_count, query_count, dispute_count }", type: "read" as const },
+  { sig: "get_comparison(id_a, id_b) -> str", desc: "Returns: Stored comparison result", type: "read" as const },
+  { sig: "vouch(identifier)", desc: "Generate a new 6-dimension trust profile via AI consensus (requires GEN)", type: "write" as const },
+  { sig: "refresh(identifier)", desc: "Re-evaluate an existing profile (requires GEN)", type: "write" as const },
+  { sig: "dispute(identifier, reason)", desc: "Challenge a trust score for re-evaluation (requires GEN)", type: "write" as const },
+  { sig: "compare(id_a, id_b)", desc: "AI consensus comparison of two profiles (requires GEN)", type: "write" as const },
+  { sig: "seed_profile(identifier, profile_json)", desc: "Seed a pre-computed profile (requires GEN)", type: "write" as const },
 ];
 
 export default function Integrate() {
@@ -142,7 +146,7 @@ export default function Integrate() {
       <main className="mx-auto max-w-4xl px-4 py-12">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Integrate vouch.fun</h1>
         <p className="text-gray-500 mb-8">
-          Add trust verification to your GenLayer contract in one call.
+          Add 6-dimension trust verification to your GenLayer contract. Query trust tiers, specific dimensions, numeric scores, or confidence levels.
         </p>
 
         {/* Contract address */}
@@ -163,19 +167,19 @@ export default function Integrate() {
 
         <section className="mb-12">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">API Reference</h2>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {API_METHODS.map((m) => (
-              <div key={m.sig} className="border border-gray-200 rounded-lg p-4 flex items-start gap-3">
+              <div key={m.sig} className="border border-gray-200 rounded-lg p-3 flex items-start gap-3">
                 <span className={`shrink-0 mt-0.5 text-xs font-mono px-2 py-0.5 rounded ${
                   m.type === "write"
                     ? "bg-amber-100 text-amber-700"
                     : "bg-green-100 text-green-700"
                 }`}>
-                  {m.type === "write" ? "write" : "read"}
+                  {m.type}
                 </span>
                 <div>
                   <code className="text-sm font-mono text-blue-600">{m.sig}</code>
-                  <p className="text-sm text-gray-500 mt-1">{m.desc}</p>
+                  <p className="text-sm text-gray-500 mt-0.5">{m.desc}</p>
                 </div>
               </div>
             ))}
@@ -202,19 +206,20 @@ export default function Integrate() {
 
         <section className="mb-12">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Composable AgentRegistry Example
+            TrustGate: Dimension-Gated Registration
           </h2>
           <p className="text-sm text-gray-500 mb-4">
-            Gate agent registration behind a trust check — any GenLayer contract can query vouch.fun as a composable oracle.
+            Gate access behind specific trust dimensions. Require a minimum code grade for developer tools,
+            DeFi experience for protocols, or governance participation for DAOs.
           </p>
           <pre className="bg-gray-900 text-gray-100 rounded-xl p-6 text-sm overflow-x-auto font-mono">
-            {COMPOSABILITY_EXAMPLE}
+            {TRUSTGATE_EXAMPLE}
           </pre>
         </section>
 
         <section className="mb-12">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Integration Examples
+            Use Cases by Dimension
           </h2>
           <div className="space-y-3">
             {USE_CASES.map((uc) => (
@@ -233,7 +238,7 @@ export default function Integrate() {
         <div className="border border-indigo-100 bg-indigo-50/30 rounded-2xl p-8 text-center">
           <h2 className="text-xl font-bold text-gray-900 mb-2">Ready to try it?</h2>
           <p className="text-sm text-gray-500 mb-4">
-            Search any GitHub handle and see the trust profile generated by AI consensus.
+            Search any identifier and see the 6-dimension trust profile generated by AI consensus.
           </p>
           <Link
             to="/"

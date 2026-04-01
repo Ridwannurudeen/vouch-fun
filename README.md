@@ -1,148 +1,392 @@
-# vouch.fun — The Trust Layer for GenLayer's Agentic Economy
+# vouch.fun --- Composable Trust Synthesis for the Agentic Economy
 
-Composable reputation oracle powered by AI consensus. vouch.fun evaluates developers using GenLayer's Optimistic Democracy — 5 independent AI validators assess GitHub and on-chain activity, reach consensus via the Equivalence Principle, and store verified trust profiles on-chain.
+Multi-dimensional trust synthesis via decentralized AI consensus. 5 independent validators evaluate 6 trust dimensions and reach agreement through GenLayer's Equivalence Principle. The first composable reputation primitive that provides judgment, not just data.
 
 **Live:** https://vouch.gudman.xyz
 
-**Track:** Agentic Economy — GenLayer Bradbury Builders Hackathon
+**Track:** Agentic Economy --- Bradbury Builders Hackathon
+
+---
 
 ## Why vouch.fun?
 
-Traditional reputation systems rely on subjective human reviews and centralized APIs. vouch.fun is fundamentally different:
+Trust in the agentic economy is binary (KYC or nothing) and siloed (GitHub doesn't talk to on-chain doesn't talk to social). There is no composable primitive for multi-dimensional trust.
 
-- **AI evaluates real activity** — code, commits, on-chain history (not peer opinions)
-- **5 validators reach consensus independently** — no single point of failure or bias
-- **Fully on-chain** — no API keys, no rate limits, no centralized authority
-- **Composable** — any contract queries trust with one view call
-- **Impossible on any other chain** — requires GenLayer's AI-native consensus
+APIs give you numbers. Gitcoin Passport gives you a boolean. DegenScore gives you a single axis. None of them answer the actual question: **"How trustworthy is this entity?"**
 
-## Features
+That question is subjective. It requires intelligence, not an API call.
 
-### Consensus Visualization
-When a profile is generating (60-120s), an animated pentagon shows 5 validator nodes progressing through consensus phases — submitting, evaluating, comparing via Equivalence Principle, and reaching agreement. This is the demo centerpiece.
+vouch.fun synthesizes judgment across 6 dimensions via AI consensus. We are honest about what this means:
 
-### Explore
-Filterable grid of all evaluated profiles. Filter by trust tier (TRUSTED / MODERATE / LOW). Each card shows handle, trust badge, code and on-chain grade pills, and summary.
+- We **synthesize**, not verify. 5 independent LLMs evaluate an identifier and reach consensus through GenLayer's Equivalence Principle.
+- Every assessment includes a **confidence level** --- high, medium, low, or none --- so consumers know exactly how much weight to give each dimension.
+- Profiles are **composable on-chain** --- any contract queries the specific dimension it cares about with a single view call.
 
-### Compare
-Side-by-side profile comparison with radar chart overlay. Six axes: Repos, Commits, Stars, Tx Count, Account Age, Contracts Deployed. Visual and tabular comparison at a glance.
+The result is a new category of reputation infrastructure: not an oracle, not an identity system, but a **trust judgment protocol**.
 
-### How It Works
-Scroll-animated explainer of GenLayer's consensus flow — from search to validator evaluation to Equivalence Principle comparison to on-chain storage to composable queries. Includes comparison with traditional reputation systems (Ethos, etc.).
+---
 
-### Dispute System
-Challenge any profile's trust assessment. Validators re-evaluate with the challenger's context, producing a new consensus score. Enables self-correction without centralized moderation.
+## The 6 Trust Dimensions
 
-### Trust Profiles
-Each profile includes letter grades (A-F) with reasoning for:
-- **Code Activity** — repos, commits, languages, stars, OSS impact
-- **On-Chain Activity** — transactions, account age, contracts deployed, suspicious patterns
+| Dimension | Key | What AI Evaluates | Why It Matters |
+|-----------|-----|-------------------|----------------|
+| Code Activity | `code` | Repos, commits, languages, stars, OSS impact, code quality signals | Developer capability |
+| On-Chain Activity | `onchain` | Tx history, account age, contracts deployed, suspicious patterns | Blockchain behavior |
+| Social Presence | `social` | Twitter/X influence, content quality, community standing, thought leadership | Public reputation |
+| Governance | `governance` | DAO participation, proposals, voting history, delegation, protocol contributions | Protocol citizenship |
+| DeFi Behavior | `defi` | Protocol interactions, LP history, liquidation patterns, risk appetite | Financial responsibility |
+| Identity | `identity` | ENS, Lens, Farcaster, proof-of-personhood signals, cross-platform linkage | Verification depth |
 
-### Trust Tiers
+Each dimension returns a structured assessment:
 
-| Tier | Meaning |
-|------|---------|
-| **TRUSTED** | Both code + on-chain grades B or above |
-| **MODERATE** | Mixed grades or average activity |
-| **LOW** | Any category graded D or below |
-| **UNKNOWN** | Insufficient data |
+```json
+{
+  "grade": "A",
+  "confidence": "high",
+  "reasoning": "Active DAO voter with 3 authored proposals on Uniswap governance",
+  "key_signals": ["47 governance votes", "3 proposals authored", "delegate for 12k UNI"]
+}
+```
 
-## Architecture
+---
+
+## How It Works
 
 ```
-User searches handle ──> VouchProtocol contract
-                              │
-                              ├── Builds evaluation prompt
-                              └── gl.nondet.exec_prompt()
-                                  (each validator evaluates independently)
-                              │
-                              ▼
-                    gl.eq_principle.prompt_non_comparative()
-                    (validators reach consensus on trust evaluation)
-                              │
-                              ▼
-                    Profile stored on-chain as JSON
-                              │
-                    ┌─────────┴─────────┐
-                    ▼                   ▼
-            Frontend displays     Other contracts call
-            grades + reasoning    get_trust_tier()
-                                        │
-                                        ▼
-                                  AgentRegistry
-                                  (trust-gated registration)
+1. Identifier Input
+   User submits any identifier: GitHub handle, ENS name, wallet address, or @twitter handle
+
+2. Type Detection
+   Contract auto-detects input type:
+   - 0x + 40 hex chars  -->  wallet address
+   - Ends with .eth     -->  ENS name
+   - Starts with @      -->  Twitter handle
+   - Otherwise          -->  GitHub handle
+
+3. Prompt Construction
+   Contract builds a structured evaluation prompt targeting all 6 dimensions
+
+4. Independent Evaluation
+   5 GenLayer validators each run gl.nondet.exec_prompt() independently
+   Each validator may use a different LLM, different reasoning, different weights
+
+5. Equivalence Principle Consensus
+   gl.eq_principle.prompt_non_comparative() compares subjective assessments
+   Validators agree on "equivalent" evaluations, not identical ones
+   Outliers are filtered --- this is impossible on deterministic blockchains
+
+6. On-Chain Storage
+   Consensus profile stored as JSON with all 6 dimensions, grades, confidence, reasoning
+
+7. Composable Queries
+   Any contract calls get_trust_tier(), get_dimension(), get_trust_score()
+   Each consumer uses only the dimension relevant to them
 ```
+
+---
+
+## Confidence Levels
+
+This is the honesty layer. We do not pretend to know everything --- we tell you how confident we are.
+
+| Level | Meaning | When It Applies |
+|-------|---------|-----------------|
+| **high** | Strong basis for assessment | Well-known entity with clear public record |
+| **medium** | Some signals available, moderate certainty | Partial information, recognizable but not prominent |
+| **low** | Limited information, assessment is speculative | Obscure entity, few public signals |
+| **none** | No information available, dimension graded N/A | Complete absence of data for this dimension |
+
+Consumers decide how to use confidence. A DeFi protocol might require `high` confidence on the `defi` dimension. An agent marketplace might accept `medium` on `code`. The protocol provides the data; the consumer sets the threshold.
+
+---
 
 ## Composability
 
-The key differentiator: any GenLayer contract can gate actions based on trust.
+This is the key differentiator. Any GenLayer contract can gate actions based on specific trust dimensions with a single cross-contract call.
 
-**VouchProtocol** — the oracle:
+### VouchProtocol --- the trust oracle
+
 ```python
-tier = gl.ContractAt(VOUCH_ADDRESS).get_trust_tier(recipient)
-if tier not in ["TRUSTED", "MODERATE"]:
-    raise Exception("Insufficient trust")
+# Get overall trust tier
+tier = gl.ContractAt(VOUCH_ADDRESS).get_trust_tier(address)
+# Returns: "TRUSTED", "MODERATE", "LOW", or "UNKNOWN"
+
+# Get a specific dimension
+dim = gl.ContractAt(VOUCH_ADDRESS).get_dimension(address, "code")
+# Returns: {"grade": "A", "confidence": "high", "reasoning": "...", "key_signals": [...]}
+
+# Get numeric trust score
+score = gl.ContractAt(VOUCH_ADDRESS).get_trust_score(address)
+# Returns: 0-100
 ```
 
-**AgentRegistry** — included consumer contract that demonstrates composability:
+### TrustGate --- dimension-gated consumer contract
+
 ```python
-# Only TRUSTED or MODERATE developers can register agents
-vouch = gl.ContractAt(self.vouch_address)
-tier = str(vouch.get_trust_tier(caller))
-if tier not in ("TRUSTED", "MODERATE"):
-    raise Exception(f"Insufficient trust: {tier}")
+class TrustGate(gl.Contract):
+    vouch_address: str
+    required_dimension: str   # "code", "defi", "governance", etc.
+    min_grade: str            # "B" = B or above required
+
+    @gl.public.write
+    def register(self, name: str) -> str:
+        caller = str(gl.message.sender_account).lower()
+        vouch = gl.ContractAt(Address(self.vouch_address))
+        dim_raw = str(vouch.get_dimension(caller, self.required_dimension))
+        dim = json.loads(dim_raw)
+        grade = dim.get("grade", "N/A")
+        confidence = dim.get("confidence", "none")
+        if confidence == "none":
+            raise Exception(f"No {self.required_dimension} data")
+        if grade_val(grade) < grade_val(self.min_grade):
+            raise Exception(f"Insufficient: {grade} (need {self.min_grade}+)")
+        # Register the caller
+        ...
 ```
 
-Use cases:
-- **Agent Marketplaces** — Only trust-verified developers register autonomous agents
-- **Code Review** — Filter reviewers by code_activity grade
-- **DeFi** — Trust-gated participation in pools or governance
-- **Dispute Resolution** — Weight party credibility using trust tiers
+### Use Cases
+
+Each consumer picks the dimension it cares about:
+
+| Consumer | Checks | Why |
+|----------|--------|-----|
+| Agent Marketplace | `get_dimension(addr, "code")` | Only devs with proven code skills register agents |
+| DeFi Protocol | `get_dimension(addr, "defi")` | Gate pool access on financial responsibility |
+| DAO | `get_dimension(addr, "governance")` | Weight votes by governance participation history |
+| Social App | `get_dimension(addr, "social")` | Filter by public reputation |
+| Identity Gate | `get_confidence(addr, "identity")` | Require high-confidence identity verification |
+
+That is composable infrastructure. The same trust profile serves every use case without modification.
+
+---
+
+## Competitive Landscape
+
+| Protocol | Dimensions | Output | On-Chain Composable | AI Consensus | Confidence Levels |
+|----------|-----------|--------|--------------------|--------------|--------------------|
+| **Gitcoin Passport** | 1 (personhood) | Boolean pass/fail | Limited | No | No |
+| **DegenScore** | 1 (DeFi) | Numeric score | No (centralized API) | No | No |
+| **Galxe** | Task-based | Binary credentials | Partial | No | No |
+| **Karma3Labs** | Graph-based | Trust propagation score | Partial | No | No |
+| **Worldcoin** | 1 (humanity) | Boolean proof | No | No | No |
+| **Nomis** | 1 (wallet) | Numeric score | No | No | No |
+| **vouch.fun** | **6** | **Graded + reasoned** | **Any contract, any dimension** | **5 validators** | **Yes** |
+
+vouch.fun creates a new category. Existing protocols answer narrow questions: "Is this a human?" "How active is this wallet?" "Did this person complete a task?" vouch.fun answers: "How trustworthy is this entity, across what dimensions, and how confident are we?"
+
+---
+
+## Why Only GenLayer
+
+A skeptic says: "Just call GPT-4 from a Chainlink Function and store the result."
+
+Here is why that does not work:
+
+### 1. Single Point of Failure vs. 5 Independent Validators
+Chainlink + GPT-4 = one LLM instance, one prompt, one result. If that model hallucinates, there is no check. vouch.fun runs 5 independent validator instances. Each may use different models, different reasoning, different internal weights. The Equivalence Principle catches outliers before consensus is reached.
+
+### 2. No Subjective Consensus Mechanism
+On Ethereum, consensus means "all nodes compute the same deterministic result." AI evaluation is inherently non-deterministic --- the same LLM returns different answers to the same question. GenLayer's Equivalence Principle is designed for exactly this: validators compare subjective assessments and agree if they are "equivalent," not identical. This mechanism does not exist on any deterministic blockchain.
+
+### 3. Native Composability via `gl.ContractAt`
+Chainlink stores data behind an oracle interface. On GenLayer, any Intelligent Contract calls `get_trust_tier()` or `get_dimension()` directly. The composability is native to the runtime, not bolted on through adapter contracts.
+
+### 4. Optimistic Democracy Dispute Model
+GenLayer's consensus model (propose, validate, appeal) means incorrect evaluations can be challenged through the protocol itself. vouch.fun's dispute system leverages this directly --- a dispute triggers a new round of consensus that supersedes the original assessment.
+
+**In one sentence:** vouch.fun requires AI-native consensus with subjective agreement and native composability --- features that exist on GenLayer and literally nowhere else.
+
+---
+
+## Economic Design
+
+### Vouch Bonds
+When someone calls `vouch(identifier)`, they are the voucher. The profile permanently records `vouched_by` --- the address that initiated the evaluation. This creates accountability: your vouches are your reputation.
+
+### Dispute Accountability
+When someone calls `dispute(identifier, reason)`:
+- A full re-evaluation runs with the challenger's context injected into the prompt
+- If the trust tier changes (e.g., TRUSTED to MODERATE), the original profile is replaced
+- The dispute is recorded permanently: `disputed: true`, `dispute_reason: "..."`
+- Dispute history is immutable --- visible to any consumer reading the profile
+
+### Voucher Tracking
+Every profile stores its provenance:
+- `vouched_by` --- who initiated the evaluation
+- `sources` --- `["ai_consensus"]`, `["seed"]`, or `["ai_consensus", "dispute"]`
+- If someone's vouches are frequently disputed and overturned, consumers can weight their vouches accordingly
+
+### v5 Slashing Roadmap
+- Explicit bond amount (e.g., 10 GEN) locked when vouching
+- If 3+ disputes successfully change the trust tier, the bond is slashed
+- Slashed bonds go to successful disputers, incentivizing honest challenges
+- Creates a market for accurate trust assessment
+
+---
 
 ## Contract API
 
 ### Write Methods
-| Method | Description |
-|--------|-------------|
-| `vouch(handle)` | Generate trust profile via LLM consensus |
-| `refresh(handle)` | Force re-evaluation of existing profile |
-| `dispute(handle, reason)` | Challenge a score — validators re-evaluate with context |
-| `compare(handle_a, handle_b)` | AI-powered comparative assessment |
-| `seed_profile(handle, json)` | Store pre-evaluated profile |
 
-### View Methods (Composable, free)
-| Method | Description |
-|--------|-------------|
-| `get_profile(address)` | Full profile JSON by wallet address |
-| `get_profile_by_handle(handle)` | Resolve handle, return profile |
-| `get_trust_tier(address)` | Returns TRUSTED / MODERATE / LOW / UNKNOWN |
-| `lookup_address(handle)` | GitHub handle to wallet address |
-| `get_all_handles()` | List all evaluated handles |
-| `get_stats()` | Profile, query, and dispute counts |
-| `get_comparison(a, b)` | Read stored comparison result |
+| Method | Parameters | Description |
+|--------|------------|-------------|
+| `vouch(identifier)` | `str` --- GitHub handle, ENS, wallet, or @twitter | Generate 6-dimension trust profile via AI consensus. Returns cached if caller already has a profile. |
+| `refresh(identifier)` | `str` | Force full re-evaluation, replacing existing profile |
+| `dispute(identifier, reason)` | `str, str` | Challenge a profile. Triggers re-evaluation with dispute context. Records dispute permanently. |
+| `compare(id_a, id_b)` | `str, str` | AI-powered 6-dimension comparative assessment between two identifiers |
+| `seed_profile(identifier, profile_json)` | `str, str` | Store a pre-evaluated profile (must include `overall` key) |
 
-### AgentRegistry API
-| Method | Description |
-|--------|-------------|
-| `register_agent(name, desc)` | Register agent (requires TRUSTED/MODERATE trust) |
-| `get_agents()` | List all registered agents |
-| `get_agent(address)` | Get agent by address |
-| `get_agent_count()` | Total registered agents |
+### View Methods (composable, free)
+
+| Method | Parameters | Returns | Description |
+|--------|------------|---------|-------------|
+| `get_profile(address)` | `str` | Full profile JSON | Complete 6-dimension profile by wallet address |
+| `get_profile_by_handle(identifier)` | `str` | Full profile JSON | Resolve identifier, return profile |
+| `get_trust_tier(address)` | `str` | `"TRUSTED"` / `"MODERATE"` / `"LOW"` / `"UNKNOWN"` | Overall trust classification |
+| `get_trust_score(address)` | `str` | `u32` (0-100) | Numeric trust score |
+| `get_dimension(address, dimension)` | `str, str` | Dimension JSON | Single dimension: grade, confidence, reasoning, key signals |
+| `get_confidence(address, dimension)` | `str, str` | `"high"` / `"medium"` / `"low"` / `"none"` | Confidence level for a specific dimension |
+| `lookup_address(identifier)` | `str` | Address string | Resolve identifier to wallet address |
+| `get_all_handles()` | --- | JSON array | List all evaluated identifiers |
+| `get_stats()` | --- | JSON | Profile count, query count, dispute count |
+| `get_comparison(id_a, id_b)` | `str, str` | Comparison JSON | Read stored comparison result |
+
+### TrustGate Consumer API
+
+| Method | Parameters | Description |
+|--------|------------|-------------|
+| `register(name)` | `str` | Register if caller meets dimension + grade requirement |
+| `get_registrations()` | --- | All registered addresses and their grades |
+| `get_config()` | --- | Gate configuration: vouch address, required dimension, min grade |
+| `is_registered(address)` | `str` | Check if address is registered |
+
+---
+
+## Architecture
+
+```
+                        vouch.fun --- Trust Synthesis Protocol
+
+  Identifier Input              AI Consensus                    On-Chain Profile
+  +-----------------+     +-------------------------+     +---------------------+
+  | GitHub: vbuterin|     |   Validator 1 (LLM A)   |     | code:    A (high)   |
+  | ENS: vitalik.eth| --> |   Validator 2 (LLM B)   | --> | onchain: A (high)   |
+  | Wallet: 0xd8dA..|     |   Validator 3 (LLM C)   |     | social:  A (high)   |
+  | Twitter: @vitalik|     |   Validator 4 (LLM D)   |     | governance: B (high)|
+  +-----------------+     |   Validator 5 (LLM E)   |     | defi:    B (medium) |
+         |                +-------------------------+     | identity: A (high)  |
+         v                         |                      | score: 91 / TRUSTED |
+  +-----------------+              v                      +---------------------+
+  | Type Detection  |     +-------------------------+              |
+  | github/ens/     |     | Equivalence Principle   |     +-------+-------+
+  | wallet/twitter  |     | Subjective consensus    |     |               |
+  +-----------------+     | (equivalent, not        |     v               v
+         |                |  identical)              |  Frontend      Consumer Contracts
+         v                +-------------------------+  displays      query via gl.ContractAt
+  +-----------------+                                   grades +     +------------------+
+  | Prompt Builder  |                                   radar    --> | TrustGate        |
+  | 6 dimensions    |                                   chart        | AgentRegistry    |
+  | grade + conf    |                                                | Any contract...  |
+  +-----------------+                                                +------------------+
+```
+
+---
 
 ## Tech Stack
 
-- **Contracts:** Python Intelligent Contracts on GenLayer Bradbury
-- **Consensus:** Optimistic Democracy with `prompt_non_comparative` equivalence principle
-- **Frontend:** React 19 + TypeScript + Vite 8 + Tailwind CSS 4
-- **Visualization:** Recharts (radar charts) + Framer Motion (animations)
-- **SDK:** genlayer-js 0.23.1
+| Layer | Technology |
+|-------|------------|
+| Contracts | Python Intelligent Contracts on GenLayer Bradbury |
+| Consensus | Optimistic Democracy with `prompt_non_comparative` equivalence principle |
+| AI Evaluation | `gl.nondet.exec_prompt()` --- 5 independent validator instances |
+| Composability | `gl.ContractAt()` for native cross-contract trust queries |
+| Frontend | React 19 + TypeScript + Vite + Tailwind CSS 4 |
+| Visualization | Recharts (6-axis radar charts) + Framer Motion (animations) |
+| SDK | genlayer-js 0.23.1 |
 
-## Deployed
+---
 
-| Component | Location |
-|-----------|----------|
-| Frontend | https://vouch.gudman.xyz |
-| VouchProtocol | `0x3F32FeD0eC4A1D34C81316DE8773674cBB4ea507` (Bradbury) |
+## Deployed Contracts
+
+| Contract | Address | Description |
+|----------|---------|-------------|
+| VouchProtocol | `0x...` (Bradbury) | Core trust synthesis oracle --- 6 dimensions, 3 seed profiles |
+| TrustGate | `0x...` (Bradbury) | Dimension-gated registration consumer (composability demo) |
+| Frontend | https://vouch.gudman.xyz | Live web application |
+
+---
+
+## Roadmap
+
+### v3 (now) --- Multi-Dimensional AI Synthesis
+- 6 trust dimensions with graded assessments
+- Confidence levels for honest uncertainty reporting
+- Universal input resolution (GitHub, ENS, wallet, Twitter)
+- Composable view methods: `get_dimension()`, `get_trust_score()`, `get_confidence()`
+- TrustGate consumer contract proving cross-contract composability
+- Dispute system with permanent accountability tracking
+
+### v4 --- Verified Data Feeds
+- GitHub API indexer providing real repo/commit/star data to validators
+- On-chain indexer feeding actual transaction history and contract deployments
+- Social API aggregator for Twitter/Farcaster/Lens activity data
+- Validators receive real data alongside LLM synthesis, increasing confidence levels
+
+### v5 --- Mainnet + Economics
+- GenLayer mainnet deployment with transaction fee revenue (up to 20% to deployed contracts)
+- Explicit vouch bonds (e.g., 10 GEN locked per evaluation)
+- Slashing mechanism for frequently-disputed vouches
+- Staking for profile generation
+- Challenge/dispute economics with disputer rewards
+
+---
+
+## Project Structure
+
+```
+vouch-fun/
+  contracts/
+    vouch_protocol.py        # Core trust oracle: 6-dimension AI synthesis, v3 schema
+    trust_gate.py            # Dimension-gated consumer contract (composability demo)
+    agent_registry.py        # Trust-gated agent registration (v2 consumer)
+    trusted_transfer.py      # Example trust-gated transfer
+    vouch_helpers.py         # Pure Python helpers (testable without GenLayer)
+  frontend/src/
+    lib/genlayer.ts          # GenLayer SDK integration + demo profiles
+    pages/
+      Home.tsx               # Hero, search, 6-dimension visual, trust flow teaser
+      Profile.tsx            # 6-axis radar chart, confidence badges, trust score
+      Explore.tsx            # Filterable profile grid by tier and dimension
+      Compare.tsx            # Side-by-side 6-axis radar overlay + comparison table
+      HowItWorks.tsx         # Scroll-animated consensus explainer
+      Integrate.tsx          # Composability examples, TrustGate reference, use cases
+      NotFound.tsx           # 404 page
+    components/
+      ConsensusAnimation.tsx # Animated 5-node validator consensus visualization
+      ProfileCard.tsx        # Reusable profile card for grids
+      RadarChart.tsx         # Recharts 6-axis radar for profiles and comparisons
+      GradeBar.tsx           # Animated horizontal grade fill bars
+      GradeCard.tsx          # Grade display with stats + reasoning
+      DisputeModal.tsx       # Challenge score submission modal
+      TrustBadge.tsx         # Colored trust tier badge (TRUSTED/MODERATE/LOW/UNKNOWN)
+      SearchBar.tsx          # Universal input: GitHub, ENS, wallet, or @twitter
+      StatsBar.tsx           # Live profile/query/dispute counts
+      Header.tsx             # Navigation
+      Footer.tsx             # Site footer
+  deploy/
+    001_deploy_vouch.ts      # VouchProtocol deployment
+    002_deploy_trusted_transfer.ts
+  scripts/
+    deploy_v3.mjs           # v3 deployment with retry logic
+    test_vouch_v3.mjs       # v3 contract integration tests
+  tests/
+    test_prompts.py          # Prompt construction + parsing tests
+    test_validators.py       # Validator evaluation tests
+    test_handle_index.py     # Handle-to-address resolution tests
+  docs/plans/                # Design documents and implementation plans
+```
+
+---
 
 ## Local Development
 
@@ -152,55 +396,25 @@ cd frontend && npm install
 cp .env.example .env  # set VITE_CONTRACT_ADDRESS
 npm run dev
 
-# Deploy contract
-GENLAYER_PRIVATE_KEY=0x... node deploy/001_deploy_vouch.ts
+# Deploy contracts (requires GenLayer private key)
+GENLAYER_PRIVATE_KEY=0x... node scripts/deploy_v3.mjs
 
-# Tests
+# Run tests
 python -m pytest tests/ -v
 ```
 
-## Project Structure
-
-```
-contracts/
-  vouch_protocol.py        # Main reputation oracle (v2: dispute, compare, handle index)
-  agent_registry.py        # Trust-gated agent registration (composability demo)
-  vouch_helpers.py         # Pure Python helpers (testable without GenLayer)
-  trusted_transfer.py      # Example consumer contract
-frontend/src/
-  lib/genlayer.ts          # GenLayer SDK integration + 8 demo profiles
-  pages/
-    Home.tsx               # Hero, search, featured profiles, trust flow teaser
-    Profile.tsx            # Trust display, consensus animation, dispute, grade bars
-    Explore.tsx            # Filterable profile grid by trust tier
-    Compare.tsx            # Side-by-side comparison with radar chart
-    HowItWorks.tsx         # Scroll-animated consensus explainer
-    Integrate.tsx          # API reference + code examples
-  components/
-    ConsensusAnimation.tsx # Animated 5-node validator consensus visualization
-    ProfileCard.tsx        # Reusable profile card for grids
-    RadarChart.tsx         # Recharts radar overlay for comparisons
-    GradeBar.tsx           # Animated horizontal grade fill bars
-    GradeCard.tsx          # Grade display with stats + reasoning
-    DisputeModal.tsx       # Challenge score submission modal
-    TrustBadge.tsx         # Colored trust tier badge
-    SearchBar.tsx          # Handle/address search input
-    StatsBar.tsx           # Live profile/query counts
-    Header.tsx             # Navigation (Search, Explore, Compare, How It Works, Integrate)
-deploy/                    # Deployment scripts
-tests/                     # Unit tests (prompts, validators, handle index)
-```
+---
 
 ## Design Decisions
 
-1. **Single LLM evaluation per consensus block** — Each `vouch()` call runs one `gl.nondet.exec_prompt()` inside a `prompt_non_comparative` block. Validators evaluate independently and reach consensus on equivalent trust assessments. Avoids multi-step web scraping fragility.
+1. **6 dimensions, not 2** --- v2 evaluated code + on-chain. That is too thin to be infrastructure. 6 dimensions cover the full trust surface: what you build, how you transact, your public reputation, your governance participation, your financial behavior, and your identity linkage. Each dimension is independently queryable, making the protocol genuinely composable.
 
-2. **String-only storage** — Bradbury's `TreeMap` type is currently broken. All data stored as serialized JSON in `str` primitives.
+2. **Confidence levels** --- This is the credibility unlock. Instead of claiming certainty we do not have, every dimension includes a confidence level (high/medium/low/none). A profile for Vitalik Buterin has `high` confidence across most dimensions. A profile for an anonymous wallet has `low` confidence on social and `none` on governance. Consumers decide their own confidence thresholds.
 
-3. **Handle index** — Separate handle-to-address mapping enables search-by-handle without address knowledge.
+3. **String storage (Bradbury constraint)** --- GenLayer Bradbury's `TreeMap` type is currently broken --- deployed contracts with `TreeMap` have unreadable state. All data is stored as serialized JSON in `str` primitives. This is a pragmatic constraint that will be revisited when `TreeMap` is fixed.
 
-4. **Seeded profiles** — Constructor bootstraps 3 profiles so the demo works immediately after deploy.
+4. **Seeded profiles** --- The constructor bootstraps 3 profiles demonstrating the full range: vbuterin (all dimensions strong, high confidence), torvalds (legendary code, zero crypto presence), ridwannurudeen (moderate across the board, mixed confidence). Judges see meaningful data immediately after deploy.
 
-5. **Fallback-first frontend** — 8 demo profiles ensure the frontend works perfectly even when testnet is down. Judges see a fully functional platform regardless of network state.
+5. **Universal input resolution** --- Accept any identifier type (GitHub handle, ENS name, wallet address, Twitter handle) through a single `vouch()` method. The contract auto-detects the type and adjusts the evaluation prompt accordingly. This removes the friction of "which identifier do I need?" --- the answer is "whatever you have."
 
-6. **Contract under 12KB** — Bradbury has a contract size limit. Refactored prompts into shared templates and compressed helper methods to stay at ~10KB.
+6. **Synthesis, not verification** --- We are explicit: vouch.fun synthesizes trust judgment from AI consensus. We do not claim to scrape APIs or verify data in real-time (that is v4). The value is in the judgment --- 5 independent AI validators reaching consensus on a subjective question --- not in raw data aggregation. This honest framing is stronger than overclaiming.

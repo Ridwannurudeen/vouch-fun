@@ -8,7 +8,7 @@ import ProfileCard from "../components/ProfileCard";
 import { readProfileByHandle } from "../lib/genlayer";
 import type { TrustProfile } from "../types";
 
-const SAMPLE_HANDLES = ["vbuterin", "gakonst", "ridwannurudeen"];
+const SAMPLE_HANDLES = ["vbuterin", "torvalds", "samczsun", "haydenzadams"];
 const FEATURED_HANDLES = ["vbuterin", "gakonst", "ridwannurudeen"];
 
 function SkeletonCard() {
@@ -46,9 +46,9 @@ export default function Home() {
         <div className="flex flex-col items-center justify-center pt-24 pb-12 gap-8 bg-gradient-to-b from-indigo-50 to-white -mx-4 px-4 rounded-b-3xl">
           <div className="text-center">
             <h1 className="text-5xl font-bold text-gray-900 mb-3">vouch.fun</h1>
-            <p className="text-xl text-gray-500">The Trust Layer for GenLayer's Agentic Economy</p>
+            <p className="text-xl text-gray-500">The Trust Layer for the Agentic Economy</p>
             <p className="text-sm text-gray-400 mt-2 max-w-lg mx-auto">
-              AI-verified trust profiles from GitHub and on-chain activity.
+              6-dimension trust synthesis from code, on-chain, social, governance, DeFi, and identity signals.
               Evaluated by 5 independent validators via Optimistic Democracy consensus.
             </p>
           </div>
@@ -68,6 +68,35 @@ export default function Home() {
           <StatsBar />
         </div>
 
+        {/* 6 Dimensions teaser */}
+        <div className="py-12 border-t border-gray-100">
+          <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
+            6 Dimensions of Trust
+          </h2>
+          <p className="text-sm text-gray-400 text-center mb-8 max-w-lg mx-auto">
+            Each profile is synthesized across code, on-chain, social, governance, DeFi, and identity
+            signals with A-F grades and confidence levels.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+            {[
+              { label: "Code", desc: "GitHub repos, commits, languages, stars", icon: "M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" },
+              { label: "On-Chain", desc: "Transactions, contracts, account age", icon: "M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" },
+              { label: "Social", desc: "Followers, influence, community reach", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" },
+              { label: "Governance", desc: "DAO votes, proposals, delegation", icon: "M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" },
+              { label: "DeFi", desc: "Protocol usage, TVL, yield farming", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
+              { label: "Identity", desc: "ENS, verified accounts, Lens/Farcaster", icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" },
+            ].map((d) => (
+              <div key={d.label} className="border border-gray-100 rounded-xl p-4 text-center hover:border-indigo-200 transition-colors">
+                <svg className="w-6 h-6 text-indigo-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d={d.icon} />
+                </svg>
+                <h3 className="font-bold text-gray-900 text-sm mb-1">{d.label}</h3>
+                <p className="text-xs text-gray-400">{d.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* How It Works teaser */}
         <div className="py-12 border-t border-gray-100">
           <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">
@@ -82,7 +111,7 @@ export default function Home() {
               </div>
               <h3 className="font-bold text-gray-900 mb-1">Search</h3>
               <p className="text-sm text-gray-500">
-                Enter any GitHub handle to begin evaluation
+                Enter any GitHub handle, ENS name, wallet address, or @twitter
               </p>
             </div>
             <div className="text-center">
@@ -93,7 +122,7 @@ export default function Home() {
               </div>
               <h3 className="font-bold text-gray-900 mb-1">Consensus</h3>
               <p className="text-sm text-gray-500">
-                5 AI validators evaluate independently and reach agreement
+                5 AI validators evaluate 6 dimensions independently and reach agreement
               </p>
             </div>
             <div className="text-center">
@@ -104,7 +133,7 @@ export default function Home() {
               </div>
               <h3 className="font-bold text-gray-900 mb-1">Trust</h3>
               <p className="text-sm text-gray-500">
-                Verified profile stored on-chain, queryable by any contract
+                Graded profile stored on-chain, composable by any contract
               </p>
             </div>
           </div>
@@ -124,12 +153,14 @@ export default function Home() {
             Featured Profiles
           </h2>
           <p className="text-sm text-gray-400 text-center mb-8">
-            Evaluated by AI consensus — stored on-chain
+            6-dimension trust synthesis — stored on-chain
           </p>
           <div className="grid md:grid-cols-3 gap-4">
             {loadingFeatured
               ? Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)
-              : featured.map((p) => <ProfileCard key={p.handle} profile={p} />)}
+              : featured.map((p) => (
+                  <ProfileCard key={p.identifier || (p as any).handle} profile={p} />
+                ))}
           </div>
           <div className="text-center mt-6">
             <Link
@@ -147,13 +178,16 @@ export default function Home() {
             Composable by Design
           </h2>
           <p className="text-sm text-gray-500 text-center max-w-lg mx-auto mb-8">
-            Any GenLayer contract can query trust tiers in a single view call.
-            No APIs, no middleware, no rate limits.
+            Any GenLayer contract can query trust dimensions in a single view call.
+            Gate actions by code grade, DeFi experience, or overall trust tier.
           </p>
           <div className="bg-gray-900 text-gray-100 rounded-xl p-6 text-sm overflow-x-auto font-mono max-w-2xl mx-auto">
             <span className="text-gray-500"># From any Intelligent Contract:</span>{"\n"}
-            tier = gl.ContractAt(vouch).get_trust_tier(addr){"\n"}
-            <span className="text-green-400">if</span> tier == <span className="text-amber-300">"TRUSTED"</span>: allow()
+            vouch = gl.ContractAt(vouch_addr){"\n"}
+            tier = vouch.get_trust_tier(addr){"\n"}
+            code = vouch.get_dimension(addr, <span className="text-amber-300">"code"</span>){"\n"}
+            score = vouch.get_trust_score(addr){"\n\n"}
+            <span className="text-green-400">if</span> tier == <span className="text-amber-300">"TRUSTED"</span> <span className="text-green-400">and</span> score &gt;= <span className="text-amber-300">70</span>: allow()
           </div>
           <div className="text-center mt-6">
             <Link
