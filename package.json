@@ -1,5 +1,14 @@
 {
   "name": "vouch-fun",
+  "version": "1.0.0",
+  "description": "Composable trust synthesis protocol for GenLayer's agentic economy — 6-dimension trust profiles via decentralized AI consensus",
+  "author": "vouch.fun",
+  "license": "MIT",
+  "homepage": "https://vouch.gudman.xyz",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ridwannurudeen/vouch-fun"
+  },
   "type": "module",
   "private": true,
   "workspaces": [

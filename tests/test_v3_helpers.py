@@ -278,7 +278,7 @@ class TestPa:
         for dim in DIMENSIONS:
             assert result[dim]["grade"] == "N/A"
             assert result[dim]["confidence"] == "none"
-            assert result[dim]["reasoning"] == "Failed"
+            assert result[dim]["reasoning"] == "Parse failed"
             assert result[dim]["key_signals"] == []
 
     def test_fallback_overall_values(self):

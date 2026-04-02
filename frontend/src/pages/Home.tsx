@@ -1034,8 +1034,8 @@ export default function Home() {
             </FadeIn>
             <div className="grid sm:grid-cols-3 gap-px bg-white/[.04] rounded-2xl overflow-hidden">
               {[
-                { val: "1,000", unit: "wei", title: "Query Fee", desc: "Per vouch or refresh" },
-                { val: "5,000", unit: "wei", title: "Minimum Stake", desc: "Endorse a dimension grade" },
+                { val: "Free", unit: "demo", title: "Query Fee", desc: "Per vouch or refresh" },
+                { val: "Free", unit: "demo", title: "Stake to Endorse", desc: "Back a dimension grade" },
                 { val: "100%", unit: "slash", title: "Dispute Penalty", desc: "Wrong stakers lose all" },
               ].map((item, i) => (
                 <FadeIn key={item.title} delay={i * 0.1}>

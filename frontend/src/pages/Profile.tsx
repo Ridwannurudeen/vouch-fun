@@ -352,7 +352,7 @@ export default function Profile() {
                   className="text-sm px-4 py-2 bg-accent text-white rounded-lg font-medium
                              hover:bg-accent-bright disabled:bg-gray-700 disabled:text-gray-500 transition-colors"
                 >
-                  {staking ? "Staking..." : `Stake ${MIN_STAKE} wei`}
+                  {staking ? "Staking..." : "Endorse Grade"}
                 </button>
               </div>
               {/* Active stakes */}
