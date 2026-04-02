@@ -2,16 +2,9 @@
 from genlayer import *
 import json
 import re
+import time
 
 _DM = "code,onchain,social,governance,defi,identity"
-_S = ('{"code":{"grade":"<A-F>","confidence":"<high|medium|low|none>",'
-      '"reasoning":"<1 sent>","key_signals":["<str>"]},'
-      '"onchain":{<same>},"social":{<same>},"governance":{<same>},'
-      '"defi":{<same>},"identity":{<same>},'
-      '"overall":{"trust_tier":"<TRUSTED|MODERATE|LOW|UNKNOWN>",'
-      '"trust_score":<0-100>,"summary":"<1 sent>",'
-      '"top_signals":["<str>","<str>","<str>"]}}')
-
 QUERY_FEE = 0  # wei — zero for demo, nonzero in production
 MIN_STAKE = 0  # wei — zero for demo
 PROFILE_TTL = 7776000  # 90 days in seconds — profiles decay after this
@@ -43,7 +36,7 @@ def _pa(raw):
         p = json.loads(c)
         if "trust_evaluation" in p: p = p["trust_evaluation"]
         if "overall" in p and "code" in p: return p
-    except: pass
+    except Exception: pass
     r = {}
     for d in _DM.split(","):
         r[d] = {"grade":"N/A","confidence":"none","reasoning":"Parse failed","key_signals":[]}
@@ -66,8 +59,10 @@ class VouchProtocol(gl.Contract):
     comparisons_data: str
     fee_pool: u32
     stakes_data: str
+    owner: str
 
     def __init__(self):
+        self.owner = str(gl.message.sender_address).lower()
         self.profile_count = 0
         self.query_count = 0
         self.dispute_count = 0
@@ -81,7 +76,6 @@ class VouchProtocol(gl.Contract):
     def _seed(self):
         a1,a2,a3 = ("0x"+"0"*39+str(i) for i in range(1,4))
         D = _dim
-        import time
         _now = int(time.time())
         s1 = {"identifier":"vbuterin","identifier_type":"github","vouched_by":a1,"sources":["seed","github_api"],
             "code":D("A","high","Ethereum creator, 190+ repos",["190+ repos","45k stars"]),
@@ -101,14 +95,14 @@ class VouchProtocol(gl.Contract):
             "identity":D("C","medium","GitHub only",["GitHub verified"]),
             "overall":{"trust_tier":"MODERATE","trust_score":48,"summary":"Legendary dev, zero crypto presence","top_signals":["Linux creator","180k stars","No crypto"]},
             "created_at":_now,"updated_at":_now}
-        s3 = {"identifier":"ridwannurudeen","identifier_type":"github","vouched_by":a3,"sources":["seed","github_api"],
-            "code":D("B","medium","Multi-chain dev, 35+ repos",["35+ repos","Multi-lang"]),
-            "onchain":D("B","medium","Active across chains",["450+ tx","12 contracts"]),
-            "social":D("C","low","Moderate presence",["Twitter active"]),
-            "governance":D("C","low","Some DAO participation",["Occasional votes"]),
-            "defi":D("C","low","Moderate DeFi usage",["Some mainnet"]),
-            "identity":D("B","medium","GitHub + multi-chain",["GitHub active"]),
-            "overall":{"trust_tier":"MODERATE","trust_score":62,"summary":"Multi-chain builder, solid code, growing presence","top_signals":["Multi-chain dev","35+ repos","Consistent activity"]},
+        s3 = {"identifier":"aaveaave","identifier_type":"github","vouched_by":a3,"sources":["seed","github_api"],
+            "code":D("A","high","Aave protocol creator, 200+ repos",["200+ repos","5k+ stars"]),
+            "onchain":D("A","high","Massive on-chain footprint",["Billions TVL","Multi-chain"]),
+            "social":D("A","high","Major DeFi thought leader",["100k+ followers"]),
+            "governance":D("A","high","Aave governance pioneer",["AAVE token","DAO votes"]),
+            "defi":D("A","high","Top DeFi lending protocol",["$10B+ TVL","Flash loans"]),
+            "identity":D("A","high","Verified across platforms",["GitHub verified","ENS"]),
+            "overall":{"trust_tier":"TRUSTED","trust_score":95,"summary":"Aave protocol, top DeFi lending platform","top_signals":["Aave creator","$10B+ TVL","DeFi pioneer"]},
             "created_at":_now,"updated_at":_now}
         seeds = [(a1,s1),(a2,s2),(a3,s3)]
         profiles = {s["identifier"]: json.dumps(s) for a,s in seeds}
@@ -119,20 +113,27 @@ class VouchProtocol(gl.Contract):
     # --- storage helpers ---
     def _gp(self):
         try: return json.loads(self.profiles_data)
-        except: return {}
+        except Exception: return {}
     def _sp(self, p): self.profiles_data = json.dumps(p)
     def _gi(self):
         try: return json.loads(self.handle_index)
-        except: return {}
+        except Exception: return {}
     def _si(self, i): self.handle_index = json.dumps(i)
     def _gc(self, a): return self._gp().get(a, "")
     def _gs(self):
         try: return json.loads(self.stakes_data)
-        except: return {}
+        except Exception: return {}
     def _ss(self, s): self.stakes_data = json.dumps(s)
 
+    def _reverse_lookup(self, addr):
+        """Find handle for a wallet address by scanning handle_index."""
+        idx = self._gi()
+        for handle, mapped_addr in idx.items():
+            if mapped_addr.lower() == addr.lower():
+                return handle
+        return None
+
     def _store(self, addr, ident, idt, profile, src):
-        import time
         profile["identifier"] = ident
         profile["identifier_type"] = idt
         profile["vouched_by"] = addr
@@ -163,31 +164,34 @@ class VouchProtocol(gl.Contract):
         known_ctx = _KNOWN.get(ident, "")
         extra = (known_ctx + "\n" + prompt_extra) if known_ctx else prompt_extra
 
+        _evidence_found = [False]  # mutable to allow nonlocal update from _run
+
         def _run():
             evidence = []
             if gh_api:
                 try:
                     data = gl.nondet.web.render(gh_api, mode="text")
                     evidence.append(f"GITHUB: {data[:1500]}")
-                except: pass
+                except Exception: pass
             if gh_repos:
                 try:
                     data = gl.nondet.web.render(gh_repos, mode="text")
                     evidence.append(f"REPOS: {data[:1000]}")
-                except: pass
+                except Exception: pass
             if es_url:
                 try:
                     data = gl.nondet.web.render(es_url, mode="text")
                     evidence.append(f"ETHERSCAN: {data[:1500]}")
-                except: pass
+                except Exception: pass
             ev = " | ".join(evidence) if evidence else "No data."
+            _evidence_found[0] = bool(ev.strip() and ev != "No data.")
             prompt = ("You are a trust evaluation oracle. Rate " + the_ident + " (" + the_idt + ") on 6 trust dimensions.\n"
                       "Evidence: " + ev + "\n" + extra + "\n"
                       "GRADING: A=exceptional top 5pct (protocol creator, 10k+ stars). B=strong active contributor (1k+ stars, regular commits). C=moderate activity. D=minimal. F=no evidence.\n"
                       "Grade generously for well-known figures. Famous security researchers and prolific OSS devs deserve A in code. Do not underweight high star counts or famous repos.\n"
                       "For dimensions without direct evidence (onchain/defi/governance for GitHub-only user), use F.\n"
                       "Return JSON with keys: code, onchain, social, governance, defi, identity, score, tier.\n"
-                      "Each dimension is a letter grade A/B/C/D/F. score is 0-100. tier is TRUSTED(80+)/MODERATE(50-79)/LOW(25-49)/UNTRUSTED(0-24).\n"
+                      "Each dimension is a letter grade A/B/C/D/F. score is 0-100. tier is TRUSTED(80+)/MODERATE(50-79)/LOW(25-49)/UNKNOWN(0-24).\n"
                       "Return ONLY the JSON object.")
             return gl.nondet.exec_prompt(prompt).strip()
 
@@ -198,9 +202,9 @@ class VouchProtocol(gl.Contract):
                 _run,
                 principle="These trust evaluations are equivalent if they assign similar overall trust levels. Minor differences in individual dimension grades (one letter apart) are normal and acceptable. Focus on whether both evaluations reach the same general conclusion about trustworthiness.")
             consensus_ok = True
-        except:
+        except Exception:
             try: raw = _run()
-            except: raw = "{}"
+            except Exception: raw = "{}"
 
         # Robust parser
         g = {}
@@ -214,10 +218,10 @@ class VouchProtocol(gl.Contract):
                     try:
                         g = json.loads(p)
                         break
-                    except: pass
+                    except Exception: pass
         if not g:
             try: g = json.loads(c)
-            except: pass
+            except Exception: pass
         if not g:
             for line in c.split("\n"):
                 line = line.strip()
@@ -225,7 +229,7 @@ class VouchProtocol(gl.Contract):
                     try:
                         g = json.loads(line)
                         break
-                    except: pass
+                    except Exception: pass
         if "trust_evaluation" in g: g = g["trust_evaluation"]
 
         grade_scores = {"A": 90, "B": 75, "C": 55, "D": 35, "F": 10}
@@ -239,21 +243,24 @@ class VouchProtocol(gl.Contract):
             if grade not in ["A","B","C","D","F"]: grade = "F"
             grades_found.append(grade)
             conf = "high" if grade in ["A","B"] else "medium" if grade == "C" else "low" if grade == "D" else "none"
-            profile[d] = {"grade": grade, "confidence": conf, "justification": f"AI-evaluated from live data"}
+            profile[d] = {"grade": grade, "confidence": conf, "reasoning": f"AI-evaluated from live data"}
 
         try: score = max(0, min(100, int(g.get("score", -1))))
-        except: score = -1
+        except Exception: score = -1
         if score < 0:
             score = int(sum(grade_scores.get(gr, 10) for gr in grades_found) / len(grades_found))
 
         tier = str(g.get("tier", "")).upper().strip()
-        if tier not in ["TRUSTED","MODERATE","LOW","UNTRUSTED"]:
+        if tier == "UNTRUSTED": tier = "UNKNOWN"
+        if tier not in ["TRUSTED","MODERATE","LOW","UNKNOWN"]:
             if score >= 80: tier = "TRUSTED"
             elif score >= 50: tier = "MODERATE"
             elif score >= 25: tier = "LOW"
-            else: tier = "UNTRUSTED"
+            else: tier = "UNKNOWN"
 
         mode = "consensus" if consensus_ok else "leader-only"
+        eq = "web-grounded" if _evidence_found[0] else "ai-only"
+        profile["evidence_quality"] = eq
         profile["overall"] = {"trust_tier": tier, "trust_score": score, "summary": f"Trust profile for {the_ident} ({mode})", "consensus_mode": mode}
 
         src = ["ai_consensus" if consensus_ok else "ai_leader"]
@@ -272,7 +279,7 @@ class VouchProtocol(gl.Contract):
             raise Exception(f"Query fee: send >= {QUERY_FEE} wei")
         idt = _dt(identifier)
         clean = _san(identifier)
-        caller = str(gl.message.sender_account).lower()
+        caller = str(gl.message.sender_address).lower()
         if QUERY_FEE > 0:
             self.fee_pool += gl.message.value
         cached = self._gc(clean)
@@ -287,7 +294,7 @@ class VouchProtocol(gl.Contract):
             raise Exception(f"Query fee: send >= {QUERY_FEE} wei")
         idt = _dt(identifier)
         clean = _san(identifier)
-        caller = str(gl.message.sender_account).lower()
+        caller = str(gl.message.sender_address).lower()
         if QUERY_FEE > 0:
             self.fee_pool += gl.message.value
         p = self._gp()
@@ -308,7 +315,7 @@ class VouchProtocol(gl.Contract):
         g = grade.strip().upper()
         if g not in "A,B,C,D,F".split(","):
             raise Exception(f"Invalid grade: {g}")
-        caller = str(gl.message.sender_account).lower()
+        caller = str(gl.message.sender_address).lower()
         stakes = self._gs()
         if clean not in stakes:
             stakes[clean] = {}
@@ -324,9 +331,13 @@ class VouchProtocol(gl.Contract):
 
     @gl.public.write
     def dispute(self, identifier: str, reason: str) -> str:
+        if QUERY_FEE > 0 and gl.message.value < QUERY_FEE:
+            raise Exception(f"Dispute fee: send >= {QUERY_FEE} wei")
         idt = _dt(identifier)
         clean = _san(identifier)
-        caller = str(gl.message.sender_account).lower()
+        caller = str(gl.message.sender_address).lower()
+        if QUERY_FEE > 0:
+            self.fee_pool += gl.message.value
         extra = f"DISPUTE reason: '{reason[:150]}'. Re-assess carefully with fresh evidence."
         profile, src = self._eval(clean, idt, extra)
         profile["disputed"] = True
@@ -336,11 +347,14 @@ class VouchProtocol(gl.Contract):
         if clean in stakes:
             for dim in stakes[clean]:
                 new_grade = profile.get(dim, {}).get("grade", "N/A")
+                kept = []
                 for s in stakes[clean][dim]:
                     if _gv(s["grade"]) > _gv(new_grade) + 1:
                         slashed.append({"staker":s["staker"],"dim":dim,"staked":s["grade"],"actual":new_grade,"amount":s["amount"]})
+                    else:
+                        kept.append(s)
+                stakes[clean][dim] = kept
             if slashed:
-                stakes[clean] = {}
                 self._ss(stakes)
                 profile["slashed_stakes"] = slashed
         src.append("dispute")
@@ -352,22 +366,39 @@ class VouchProtocol(gl.Contract):
     @gl.public.write
     def compare(self, id_a: str, id_b: str) -> str:
         a, b = _san(id_a), _san(id_b)
-        pr = (f"Compare '{a}' and '{b}' across 6 trust dims ({_DM}). "
-              "Return ONLY JSON: "
-              '{"summary":"<2 sent>","winner":"<id>",'
-              '"dims":{"code":"<winner>","onchain":"<winner>","social":"<winner>",'
-              '"governance":"<winner>","defi":"<winner>","identity":"<winner>"},'
-              '"reasoning":"<1 sent>"}')
+        idt_a, idt_b = _dt(id_a), _dt(id_b)
+        gh_a = f"https://api.github.com/users/{a}" if idt_a == "github" else ""
+        gh_b = f"https://api.github.com/users/{b}" if idt_b == "github" else ""
+
         def _run():
+            evidence = []
+            if gh_a:
+                try:
+                    data = gl.nondet.web.render(gh_a, mode="text")
+                    evidence.append(f"GITHUB({a}): {data[:1200]}")
+                except Exception: pass
+            if gh_b:
+                try:
+                    data = gl.nondet.web.render(gh_b, mode="text")
+                    evidence.append(f"GITHUB({b}): {data[:1200]}")
+                except Exception: pass
+            ev = " | ".join(evidence) if evidence else "No live data available."
+            pr = (f"Compare '{a}' and '{b}' across 6 trust dims ({_DM}). "
+                  f"Evidence: {ev}\n"
+                  "Return ONLY JSON: "
+                  '{"summary":"<2 sent>","winner":"<id>",'
+                  '"dims":{"code":"<winner>","onchain":"<winner>","social":"<winner>",'
+                  '"governance":"<winner>","defi":"<winner>","identity":"<winner>"},'
+                  '"reasoning":"<1 sent>"}')
             return gl.nondet.exec_prompt(pr).strip()
         try: raw = gl.eq_principle.prompt_non_comparative(_run, task="Compare trust", criteria="Fair comparison")
-        except: raw = "{}"
+        except Exception: raw = "{}"
         c = raw.strip()
         if c.startswith("```"): c = c.split("\n",1)[-1].rsplit("```",1)[0].strip()
         try: comp = json.loads(c)
-        except: comp = {"summary":"Could not compare","winner":"","reasoning":"Failed"}
+        except Exception: comp = {"summary":"Could not compare","winner":"","reasoning":"Failed"}
         try: comps = json.loads(self.comparisons_data)
-        except: comps = {}
+        except Exception: comps = {}
         comps[f"{a}:{b}"] = json.dumps(comp)
         self.comparisons_data = json.dumps(comps)
         self.query_count += 1
@@ -375,12 +406,23 @@ class VouchProtocol(gl.Contract):
 
     @gl.public.write
     def seed_profile(self, identifier: str, profile_json: str) -> str:
+        if str(gl.message.sender_address).lower() != self.owner:
+            return json.dumps({"error": "Only owner can seed profiles"})
         clean = _san(identifier)
         idt = _dt(identifier)
-        caller = str(gl.message.sender_account).lower()
+        caller = str(gl.message.sender_address).lower()
         profile = json.loads(profile_json)
         if "overall" not in profile: raise Exception("Missing overall")
         return self._store(caller, clean, idt, profile, ["seed"])
+
+    @gl.public.write
+    def withdraw_fees(self) -> str:
+        caller = str(gl.message.sender_address).lower()
+        if caller != self.owner:
+            return json.dumps({"error": "Only owner can withdraw fees"})
+        amount = self.fee_pool
+        self.fee_pool = 0
+        return json.dumps({"withdrawn": amount, "to": self.owner})
 
     # --- public view methods ---
     @gl.public.view
@@ -399,27 +441,34 @@ class VouchProtocol(gl.Contract):
         a = address.strip().lower()
         if not re.match(r'^0x[a-f0-9]{40}$', a): return "UNKNOWN"
         raw = self._gc(a)
+        if not raw:
+            handle = self._reverse_lookup(a)
+            if handle:
+                raw = self._gc(handle)
         if not raw: return "UNKNOWN"
         try:
             p = json.loads(raw)
             tier = p.get("overall",{}).get("trust_tier","UNKNOWN")
-            import time
             updated = p.get("updated_at", p.get("created_at", 0))
             age = int(time.time()) - updated if updated else 999999
             if age > PROFILE_TTL:
-                decay = {"TRUSTED": "MODERATE", "MODERATE": "LOW", "LOW": "UNTRUSTED"}
+                decay = {"TRUSTED": "MODERATE", "MODERATE": "LOW", "LOW": "UNKNOWN"}
                 tier = decay.get(tier, tier)
             return tier
-        except: return "UNKNOWN"
+        except Exception: return "UNKNOWN"
 
     @gl.public.view
     def get_trust_score(self, address: str) -> u32:
         a = address.strip().lower()
         if not re.match(r'^0x[a-f0-9]{40}$', a): return 0
         raw = self._gc(a)
+        if not raw:
+            handle = self._reverse_lookup(a)
+            if handle:
+                raw = self._gc(handle)
         if not raw: return 0
         try: return json.loads(raw).get("overall",{}).get("trust_score",0)
-        except: return 0
+        except Exception: return 0
 
     @gl.public.view
     def get_dimension(self, address: str, dimension: str) -> str:
@@ -427,9 +476,13 @@ class VouchProtocol(gl.Contract):
         d = dimension.strip().lower()
         if not re.match(r'^0x[a-f0-9]{40}$', a): return "{}"
         raw = self._gc(a)
+        if not raw:
+            handle = self._reverse_lookup(a)
+            if handle:
+                raw = self._gc(handle)
         if not raw: return "{}"
         try: return json.dumps(json.loads(raw).get(d,{}))
-        except: return "{}"
+        except Exception: return "{}"
 
     @gl.public.view
     def get_confidence(self, address: str, dimension: str) -> str:
@@ -437,9 +490,13 @@ class VouchProtocol(gl.Contract):
         d = dimension.strip().lower()
         if not re.match(r'^0x[a-f0-9]{40}$', a): return "none"
         raw = self._gc(a)
+        if not raw:
+            handle = self._reverse_lookup(a)
+            if handle:
+                raw = self._gc(handle)
         if not raw: return "none"
         try: return json.loads(raw).get(d,{}).get("confidence","none")
-        except: return "none"
+        except Exception: return "none"
 
     @gl.public.view
     def lookup_address(self, identifier: str) -> str:
@@ -457,7 +514,7 @@ class VouchProtocol(gl.Contract):
     def get_comparison(self, id_a: str, id_b: str) -> str:
         a, b = _san(id_a), _san(id_b)
         try: comps = json.loads(self.comparisons_data)
-        except: return "{}"
+        except Exception: return "{}"
         return comps.get(f"{a}:{b}", comps.get(f"{b}:{a}", "{}"))
 
     @gl.public.view
@@ -472,7 +529,6 @@ class VouchProtocol(gl.Contract):
 
     @gl.public.view
     def get_profile_age(self, identifier: str) -> str:
-        import time
         h = _san(identifier)
         raw = self._gc(h)
         if not raw: return json.dumps({"exists": False, "handle": h})
@@ -482,7 +538,7 @@ class VouchProtocol(gl.Contract):
             age = int(time.time()) - updated if updated else -1
             fresh = age >= 0 and age <= PROFILE_TTL
             return json.dumps({"handle": h, "age_seconds": age, "age_days": age // 86400, "fresh": fresh, "ttl_seconds": PROFILE_TTL, "updated_at": updated})
-        except:
+        except Exception:
             return json.dumps({"exists": False, "handle": h})
 
     @gl.public.view
@@ -502,9 +558,9 @@ class VouchProtocol(gl.Contract):
         grade = dim_data.get("grade", "F") if isinstance(dim_data, dict) else "F"
         if _gv(grade) < _gv(min_grade):
             return json.dumps({"status": "rejected", "reason": f"Grade {grade} < required {min_grade}", "handle": h, "gate": gate_name, "dimension": dimension})
-        caller = str(gl.message.sender_account).lower()
+        caller = str(gl.message.sender_address).lower()
         try: reg = json.loads(self.stakes_data)
-        except: reg = {}
+        except Exception: reg = {}
         gate_key = f"gate:{gate_name}"
         if gate_key not in reg:
             reg[gate_key] = {}
@@ -527,7 +583,7 @@ class VouchProtocol(gl.Contract):
     @gl.public.view
     def gate_members(self, gate_name: str) -> str:
         try: reg = json.loads(self.stakes_data)
-        except: return "[]"
+        except Exception: return "[]"
         gate_key = f"gate:{gate_name}"
         members = reg.get(gate_key, {})
         return json.dumps(list(members.keys()))
@@ -535,7 +591,7 @@ class VouchProtocol(gl.Contract):
     @gl.public.view
     def gate_info(self, gate_name: str) -> str:
         try: reg = json.loads(self.stakes_data)
-        except: reg = {}
+        except Exception: reg = {}
         gate_key = f"gate:{gate_name}"
         members = reg.get(gate_key, {})
         return json.dumps({"gate": gate_name, "member_count": len(members), "members": members})
@@ -555,12 +611,11 @@ class VouchProtocol(gl.Contract):
         score = profile.get("overall", {}).get("trust_score", 0)
         tier = profile.get("overall", {}).get("trust_tier", "UNKNOWN")
         ok = _gv(grade) >= _gv(min_grade)
-        import time
         updated = 0
         try:
             p = json.loads(cached)
             updated = p.get("updated_at", p.get("created_at", 0))
-        except: pass
+        except Exception: pass
         age = int(time.time()) - updated if updated else -1
         fresh = age >= 0 and age <= PROFILE_TTL
         return json.dumps({
@@ -573,7 +628,7 @@ class VouchProtocol(gl.Contract):
     @gl.public.view
     def trust_batch_query(self, identifiers_json: str, dimension: str, min_grade: str) -> str:
         try: ids = json.loads(identifiers_json)
-        except: return json.dumps({"error": "Invalid JSON array"})
+        except Exception: return json.dumps({"error": "Invalid JSON array"})
         results = []
         for ident in ids[:20]:
             h = _san(ident)
@@ -591,7 +646,7 @@ class VouchProtocol(gl.Contract):
     @gl.public.view
     def list_gates(self) -> str:
         try: reg = json.loads(self.stakes_data)
-        except: return "[]"
+        except Exception: return "[]"
         gates = []
         for k, v in reg.items():
             if k.startswith("gate:"):

@@ -1,6 +1,20 @@
 import { createClient, createAccount } from "genlayer-js";
 import { testnetBradbury, localnet } from "genlayer-js/chains";
-import type { TrustProfile, DimensionScore } from "../types";
+import type {
+  TrustProfile,
+  DimensionScore,
+
+  GateCheckResult,
+  GateInfo,
+  TrustQueryResult,
+  TrustBatchResult,
+  ProfileAge,
+  DecayInfo,
+  Comparison,
+  ProtocolStats,
+  FeePool,
+  StakeEntry,
+} from "../types";
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "";
 const DEMO_KEY = import.meta.env.VITE_DEMO_PRIVATE_KEY || "";
@@ -106,7 +120,7 @@ export async function readProfile(address: string): Promise<TrustProfile | null>
       functionName: "get_profile",
       args: [address.trim().toLowerCase()],
     });
-    const parsed = typeof result === "string" ? JSON.parse(result) : result;
+    const parsed = typeof result === "string" ? JSON.parse(result) : (result as any);
     if (parsed && parsed.overall) return parsed;
   } catch {}
   return null;
@@ -120,7 +134,7 @@ export async function readProfileByHandle(handle: string): Promise<TrustProfile 
       functionName: "get_profile_by_handle",
       args: [key],
     });
-    const parsed = typeof result === "string" ? JSON.parse(result) : result;
+    const parsed = typeof result === "string" ? JSON.parse(result) : (result as any);
     if (parsed && parsed.overall) return parsed;
   } catch {}
   return DEMO_PROFILES[key] || null;
@@ -149,28 +163,13 @@ export const QUERY_FEE = 0n;
 export const MIN_STAKE = 0n;
 
 export async function generateProfile(handle: string): Promise<any> {
-  // Try full multi-validator consensus first
   const txHash = await client.writeContract({
     address: contractAddress,
     functionName: "vouch",
     args: [handle],
     value: 0n,
   });
-  const receipt = await client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
-
-  // If consensus failed (status 6 = disagreement), retry with leaderOnly
-  const status = typeof receipt === "object" ? (receipt as any).status : undefined;
-  if (status === 6 || status === "6") {
-    const retryHash = await client.writeContract({
-      address: contractAddress,
-      functionName: "vouch",
-      args: [handle],
-      value: 0n,
-      leaderOnly: true,
-    });
-    return client.waitForTransactionReceipt({ hash: retryHash, retries: 120, interval: 5000 });
-  }
-  return receipt;
+  return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
 }
 
 export async function refreshProfile(handle: string): Promise<any> {
@@ -180,19 +179,7 @@ export async function refreshProfile(handle: string): Promise<any> {
     args: [handle],
     value: 0n,
   });
-  const receipt = await client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
-  const status = typeof receipt === "object" ? (receipt as any).status : undefined;
-  if (status === 6 || status === "6") {
-    const retryHash = await client.writeContract({
-      address: contractAddress,
-      functionName: "refresh",
-      args: [handle],
-      value: 0n,
-      leaderOnly: true,
-    });
-    return client.waitForTransactionReceipt({ hash: retryHash, retries: 120, interval: 5000 });
-  }
-  return receipt;
+  return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
 }
 
 export async function stakeVouch(identifier: string, dimension: string, grade: string, _amount?: bigint): Promise<any> {
@@ -201,48 +188,48 @@ export async function stakeVouch(identifier: string, dimension: string, grade: s
     functionName: "stake_vouch",
     args: [identifier, dimension, grade],
     value: 0n,
-    leaderOnly: true,
+    leaderOnly: false,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
 }
 
-export async function getStakes(identifier: string): Promise<any> {
+export async function getStakes(identifier: string): Promise<Record<string, StakeEntry[]>> {
   try {
     const result = await client.readContract({
       address: contractAddress,
       functionName: "get_stakes",
       args: [identifier],
     });
-    return typeof result === "string" ? JSON.parse(result) : result;
+    return typeof result === "string" ? JSON.parse(result) : (result as any);
   } catch {
     return {};
   }
 }
 
-export async function getFeePool(): Promise<{ fee_pool: number; query_fee: number; min_stake: number }> {
+export async function getFeePool(): Promise<FeePool> {
   try {
     const result = await client.readContract({
       address: contractAddress,
       functionName: "get_fee_pool",
       args: [],
     });
-    const parsed = typeof result === "string" ? JSON.parse(result) : result;
+    const parsed = typeof result === "string" ? JSON.parse(result) : (result as any);
     if (parsed && typeof parsed.fee_pool === "number") return parsed;
   } catch {}
   return { fee_pool: 0, query_fee: 1000, min_stake: 5000 };
 }
 
-export async function getStats(): Promise<{ profile_count: number; query_count: number; dispute_count: number }> {
+export async function getStats(): Promise<ProtocolStats> {
   try {
     const result = await client.readContract({
       address: contractAddress,
       functionName: "get_stats",
       args: [],
     });
-    const parsed = typeof result === "string" ? JSON.parse(result) : result;
+    const parsed = typeof result === "string" ? JSON.parse(result) : (result as any);
     if (parsed && typeof parsed.profile_count === "number") return parsed;
   } catch {}
-  return { profile_count: Object.keys(DEMO_PROFILES).length, query_count: 24, dispute_count: 0 };
+  return { profile_count: Object.keys(DEMO_PROFILES).length, query_count: 0, dispute_count: 0 };
 }
 
 export async function getAllProfiles(): Promise<TrustProfile[]> {
@@ -252,7 +239,7 @@ export async function getAllProfiles(): Promise<TrustProfile[]> {
       functionName: "get_all_handles",
       args: [],
     });
-    const handles: string[] = typeof result === "string" ? JSON.parse(result) : result;
+    const handles: string[] = typeof result === "string" ? JSON.parse(result) : (result as any);
     if (Array.isArray(handles) && handles.length > 0) {
       const profiles = await Promise.all(handles.map((h: string) => readProfileByHandle(h)));
       return profiles.filter((p): p is TrustProfile => p !== null);
@@ -267,7 +254,7 @@ export async function disputeProfile(handle: string, reason: string): Promise<an
     functionName: "dispute",
     args: [handle, reason],
     value: 0n,
-    leaderOnly: true,
+    leaderOnly: false,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
 }
@@ -278,21 +265,21 @@ export async function compareProfiles(handleA: string, handleB: string): Promise
     functionName: "compare",
     args: [handleA, handleB],
     value: 0n,
-    leaderOnly: true,
+    leaderOnly: false,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
 }
 
 // === TrustGate composability functions ===
 
-export async function gateCheck(handle: string, dimension: string, minGrade: string): Promise<any> {
+export async function gateCheck(handle: string, dimension: string, minGrade: string): Promise<GateCheckResult> {
   try {
     const result = await client.readContract({
       address: contractAddress,
       functionName: "gate_check",
       args: [handle.trim().toLowerCase(), dimension, minGrade],
     });
-    return typeof result === "string" ? JSON.parse(result) : result;
+    return typeof result === "string" ? JSON.parse(result) : (result as any);
   } catch {
     return { eligible: false, reason: "Error checking gate" };
   }
@@ -304,19 +291,19 @@ export async function gateRegister(handle: string, gateName: string, dimension: 
     functionName: "gate_register",
     args: [handle, gateName, dimension, minGrade],
     value: 0n,
-    leaderOnly: true,
+    leaderOnly: false,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 60, interval: 5000 });
 }
 
-export async function gateInfo(gateName: string): Promise<any> {
+export async function gateInfo(gateName: string): Promise<GateInfo> {
   try {
     const result = await client.readContract({
       address: contractAddress,
       functionName: "gate_info",
       args: [gateName],
     });
-    return typeof result === "string" ? JSON.parse(result) : result;
+    return typeof result === "string" ? JSON.parse(result) : (result as any);
   } catch {
     return { gate: gateName, member_count: 0, members: {} };
   }
@@ -329,7 +316,7 @@ export async function gateMembers(gateName: string): Promise<string[]> {
       functionName: "gate_members",
       args: [gateName],
     });
-    const parsed = typeof result === "string" ? JSON.parse(result) : result;
+    const parsed = typeof result === "string" ? JSON.parse(result) : (result as any);
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
@@ -338,80 +325,80 @@ export async function gateMembers(gateName: string): Promise<string[]> {
 
 // === Trust Oracle: Chainlink-for-Reputation ===
 
-export async function trustQuery(identifier: string, dimension: string, minGrade: string): Promise<any> {
+export async function trustQuery(identifier: string, dimension: string, minGrade: string): Promise<TrustQueryResult> {
   try {
     const result = await client.readContract({
       address: contractAddress,
       functionName: "trust_query",
       args: [identifier.trim().toLowerCase(), dimension, minGrade],
     });
-    return typeof result === "string" ? JSON.parse(result) : result;
+    return typeof result === "string" ? JSON.parse(result) : (result as any);
   } catch {
     return { pass: false, reason: "Error querying trust oracle" };
   }
 }
 
-export async function trustBatchQuery(identifiers: string[], dimension: string, minGrade: string): Promise<any> {
+export async function trustBatchQuery(identifiers: string[], dimension: string, minGrade: string): Promise<TrustBatchResult> {
   try {
     const result = await client.readContract({
       address: contractAddress,
       functionName: "trust_batch_query",
       args: [JSON.stringify(identifiers), dimension, minGrade],
     });
-    return typeof result === "string" ? JSON.parse(result) : result;
+    return typeof result === "string" ? JSON.parse(result) : (result as any);
   } catch {
     return { results: [], total: 0, passed: 0 };
   }
 }
 
-export async function listGates(): Promise<any[]> {
+export async function listGates(): Promise<{ name: string; [key: string]: unknown }[]> {
   try {
     const result = await client.readContract({
       address: contractAddress,
       functionName: "list_gates",
       args: [],
     });
-    const parsed = typeof result === "string" ? JSON.parse(result) : result;
+    const parsed = typeof result === "string" ? JSON.parse(result) : (result as any);
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
 }
 
-export async function getProfileAge(identifier: string): Promise<any> {
+export async function getProfileAge(identifier: string): Promise<ProfileAge> {
   try {
     const result = await client.readContract({
       address: contractAddress,
       functionName: "get_profile_age",
       args: [identifier.trim().toLowerCase()],
     });
-    return typeof result === "string" ? JSON.parse(result) : result;
+    return typeof result === "string" ? JSON.parse(result) : (result as any);
   } catch {
     return { exists: false };
   }
 }
 
-export async function getDecayInfo(): Promise<any> {
+export async function getDecayInfo(): Promise<DecayInfo> {
   try {
     const result = await client.readContract({
       address: contractAddress,
       functionName: "get_decay_info",
       args: [],
     });
-    return typeof result === "string" ? JSON.parse(result) : result;
+    return typeof result === "string" ? JSON.parse(result) : (result as any);
   } catch {
     return { ttl_days: 90 };
   }
 }
 
-export async function getComparison(handleA: string, handleB: string): Promise<any> {
+export async function getComparison(handleA: string, handleB: string): Promise<Comparison | null> {
   try {
     const result = await client.readContract({
       address: contractAddress,
       functionName: "get_comparison",
       args: [handleA, handleB],
     });
-    const parsed = typeof result === "string" ? JSON.parse(result) : result;
+    const parsed = typeof result === "string" ? JSON.parse(result) : (result as any);
     if (parsed && parsed.summary) return parsed;
   } catch {}
   return null;

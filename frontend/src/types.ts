@@ -58,3 +58,75 @@ export interface Comparison {
   dims?: Record<string, string>;
   reasoning: string;
 }
+
+/** Generic transaction receipt returned by genlayer-js waitForTransactionReceipt */
+export interface TransactionReceipt {
+  hash?: string;
+  status?: number | string;
+  [key: string]: unknown;
+}
+
+export interface GateCheckResult {
+  eligible: boolean;
+  reason?: string;
+  handle?: string;
+  grade?: string;
+  required?: string;
+}
+
+export interface GateInfo {
+  gate: string;
+  member_count: number;
+  members: Record<string, { grade: string; [key: string]: unknown }>;
+}
+
+export interface TrustQueryResult {
+  pass: boolean;
+  handle?: string;
+  dimension?: string;
+  required?: string;
+  grade?: string;
+  confidence?: string;
+  overall_score?: number;
+  overall_tier?: string;
+  fresh?: boolean;
+  age_days?: number;
+  reason?: string;
+}
+
+export interface TrustBatchResult {
+  results: TrustQueryResult[];
+  total: number;
+  passed: number;
+}
+
+export interface ProfileAge {
+  exists: boolean;
+  handle?: string;
+  age_days?: number;
+  age_seconds?: number;
+  fresh?: boolean;
+}
+
+export interface DecayInfo {
+  ttl_days: number;
+  decay_rule?: string;
+}
+
+export interface ProtocolStats {
+  profile_count: number;
+  query_count: number;
+  dispute_count: number;
+}
+
+export interface FeePool {
+  fee_pool: number;
+  query_fee: number;
+  min_stake: number;
+}
+
+export interface StakeEntry {
+  grade: string;
+  amount: number;
+  [key: string]: unknown;
+}

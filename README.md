@@ -183,7 +183,7 @@ bid("0", "I'll audit with formal verification")  # Contract enforces grade check
 ```python
 from vouch import VouchClient
 
-client = VouchClient("0xB400f98aFAADc9819b4F465c66ed0bf10be01028")
+client = VouchClient("0xbC20d8c9A1C6ff966508f1777aeF8ef05661E847")
 
 # Simple checks
 if client.is_trusted(addr): proceed()
@@ -362,7 +362,7 @@ Every profile stores its provenance:
 
 | Layer | Technology |
 |-------|------------|
-| Contracts | Python Intelligent Contracts on GenLayer Bradbury |
+| Contracts | Python Intelligent Contracts on GenLayer Studio |
 | Consensus | Optimistic Democracy with `prompt_non_comparative` equivalence principle |
 | AI Evaluation | `gl.nondet.exec_prompt()` --- 5 independent validator instances |
 | Composability | `gl.ContractAt()` for native cross-contract trust queries |
@@ -376,10 +376,7 @@ Every profile stores its provenance:
 
 | Contract | Address | Description |
 |----------|---------|-------------|
-| VouchProtocol v4 | `0xB400f98aFAADc9819b4F465c66ed0bf10be01028` (Bradbury) | Core trust synthesis oracle --- web-grounded data, 6 dimensions, economic model |
-| TrustGate | Pending deploy | Dimension-gated registration consumer |
-| TrustLending | Pending deploy | Trust-scored lending --- borrow limits by tier |
-| AgentMarketplace | Pending deploy | Agent hiring gate --- dimension-gated bidding |
+| VouchProtocol v4 | `0xbC20d8c9A1C6ff966508f1777aeF8ef05661E847` (GenLayer Studio) | Core trust synthesis oracle --- web-grounded data, 6 dimensions, economic model |
 | Frontend | https://vouch.gudman.xyz | Live web application |
 
 ---
@@ -451,7 +448,7 @@ vouch-fun/
     deploy_trustgate.mjs       # TrustGate deployment
     agent_trust_demo.py        # Agent-to-agent trust verification demo
     test_vouch_v3.mjs          # Contract integration tests
-  tests/                       # 240+ tests: helpers, schema, validators, prompts, handle index
+  tests/                       # 194 tests: helpers, schema validation
   docs/
     plans/                     # Design documents
     pitch.md                   # Hackathon submission pitch
@@ -471,7 +468,7 @@ npm run dev
 DEPLOY_KEY=0x... node scripts/deploy_v3.mjs
 DEPLOY_KEY=0x... VOUCH_ADDRESS=0x... node scripts/deploy_trustgate.mjs
 
-# Run tests (240 tests)
+# Run tests (194 tests)
 python -m pytest tests/ -v
 ```
 
