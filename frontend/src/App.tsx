@@ -4,6 +4,7 @@ import Profile from "./pages/Profile";
 import Integrate from "./pages/Integrate";
 import Explore from "./pages/Explore";
 import Compare from "./pages/Compare";
+import Gates from "./pages/Gates";
 import HowItWorks from "./pages/HowItWorks";
 import NotFound from "./pages/NotFound";
 
@@ -17,6 +18,7 @@ function App() {
         <Route path="/explore" element={<Explore />} />
         <Route path="/compare" element={<Compare />} />
         <Route path="/compare/:a/:b" element={<Compare />} />
+        <Route path="/gates" element={<Gates />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

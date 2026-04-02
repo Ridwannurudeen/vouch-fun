@@ -25,6 +25,7 @@ export default function Header() {
           <Link to="/" className={linkClass("/")}>Search</Link>
           <Link to="/explore" className={linkClass("/explore")}>Explore</Link>
           <Link to="/compare" className={linkClass("/compare")}>Compare</Link>
+          <Link to="/gates" className={linkClass("/gates")}>Gates</Link>
           <Link to="/how-it-works" className={linkClass("/how-it-works")}>How It Works</Link>
           <Link to="/integrate" className={linkClass("/integrate")}>Integrate</Link>
         </nav>
@@ -51,6 +52,7 @@ export default function Header() {
           <Link to="/" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/")}`}>Search</Link>
           <Link to="/explore" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/explore")}`}>Explore</Link>
           <Link to="/compare" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/compare")}`}>Compare</Link>
+          <Link to="/gates" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/gates")}`}>Gates</Link>
           <Link to="/how-it-works" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/how-it-works")}`}>How It Works</Link>
           <Link to="/integrate" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/integrate")}`}>Integrate</Link>
         </nav>

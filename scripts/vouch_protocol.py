@@ -170,11 +170,14 @@ class VouchProtocol(gl.Contract):
                     evidence.append(f"ETHERSCAN: {data[:1500]}")
                 except: pass
             ev = " | ".join(evidence) if evidence else "No data."
-            prompt = (f"Rate '{the_ident}' ({the_idt}) on 6 trust dimensions using this evidence:\n"
-                      f"{ev}\n{extra}\n"
-                      f"Return JSON with keys: code, onchain, social, governance, defi, identity, score, tier.\n"
-                      f"Each dimension is a letter grade A/B/C/D/F. score is 0-100. tier is TRUSTED/MODERATE/LOW/UNTRUSTED.\n"
-                      f"Use F for dimensions with no evidence. Return only the JSON object, nothing else.")
+            prompt = ("You are a trust evaluation oracle. Rate " + the_ident + " (" + the_idt + ") on 6 trust dimensions.\n"
+                      "Evidence: " + ev + "\n" + extra + "\n"
+                      "GRADING: A=exceptional top 5pct (protocol creator, 10k+ stars). B=strong active contributor (1k+ stars, regular commits). C=moderate activity. D=minimal. F=no evidence.\n"
+                      "Grade generously for well-known figures. Famous security researchers and prolific OSS devs deserve A in code. Do not underweight high star counts or famous repos.\n"
+                      "For dimensions without direct evidence (onchain/defi/governance for GitHub-only user), use F.\n"
+                      "Return JSON with keys: code, onchain, social, governance, defi, identity, score, tier.\n"
+                      "Each dimension is a letter grade A/B/C/D/F. score is 0-100. tier is TRUSTED(80+)/MODERATE(50-79)/LOW(25-49)/UNTRUSTED(0-24).\n"
+                      "Return ONLY the JSON object.")
             return gl.nondet.exec_prompt(prompt).strip()
 
         # Try full consensus, fall back to leader-only
