@@ -14,6 +14,7 @@ _S = ('{"code":{"grade":"<A-F>","confidence":"<high|medium|low|none>",'
 
 QUERY_FEE = 0  # wei — minimal fee to demonstrate economic model
 MIN_STAKE = 0  # wei — minimum stake for vouch endorsement
+PROFILE_TTL = 7776000  # 90 days in seconds — profiles decay after this
 
 def _dt(s):
     s = s.strip()
@@ -95,6 +96,11 @@ class VouchProtocol(gl.Contract):
             "defi":D("C","low","Moderate DeFi usage",["Some mainnet"]),
             "identity":D("B","medium","GitHub + multi-chain",["GitHub active"]),
             "overall":{"trust_tier":"MODERATE","trust_score":62,"summary":"Multi-chain builder, solid code, growing presence","top_signals":["Multi-chain dev","35+ repos","Consistent activity"]}}
+        import time
+        _now = int(time.time())
+        for _s in [s1,s2,s3]:
+            _s["created_at"] = _now
+            _s["updated_at"] = _now
         seeds = [(a1,s1),(a2,s2),(a3,s3)]
         profiles = {s["identifier"]: json.dumps(s) for a,s in seeds}
         self.profiles_data = json.dumps(profiles)
@@ -117,10 +123,13 @@ class VouchProtocol(gl.Contract):
     def _ss(self, s): self.stakes_data = json.dumps(s)
 
     def _store(self, addr, ident, idt, profile, src):
+        import time
         profile["identifier"] = ident
         profile["identifier_type"] = idt
         profile["vouched_by"] = addr
         profile["sources"] = src
+        profile["created_at"] = int(time.time())
+        profile["updated_at"] = int(time.time())
         fj = json.dumps(profile)
         p = self._gp()
         new = ident not in p
@@ -384,7 +393,18 @@ class VouchProtocol(gl.Contract):
         if not re.match(r'^0x[a-f0-9]{40}$', a): return "UNKNOWN"
         raw = self._gc(a)
         if not raw: return "UNKNOWN"
-        try: return json.loads(raw).get("overall",{}).get("trust_tier","UNKNOWN")
+        try:
+            p = json.loads(raw)
+            tier = p.get("overall",{}).get("trust_tier","UNKNOWN")
+            # Score decay: downgrade tier if profile is stale
+            import time
+            updated = p.get("updated_at", p.get("created_at", 0))
+            age = int(time.time()) - updated if updated else 999999
+            if age > PROFILE_TTL:
+                # Stale profile — downgrade by one tier
+                decay = {"TRUSTED": "MODERATE", "MODERATE": "LOW", "LOW": "UNTRUSTED"}
+                tier = decay.get(tier, tier)
+            return tier
         except: return "UNKNOWN"
 
     @gl.public.view
@@ -445,7 +465,28 @@ class VouchProtocol(gl.Contract):
     def get_fee_pool(self) -> str:
         return json.dumps({"fee_pool":self.fee_pool,"query_fee":QUERY_FEE,"min_stake":MIN_STAKE})
 
-    # === TrustGate: Composability Demo ===
+    @gl.public.view
+    def get_profile_age(self, identifier: str) -> str:
+        """Returns profile age in seconds and whether it's fresh (within TTL)."""
+        import time
+        h = _san(identifier)
+        raw = self._gc(h)
+        if not raw: return json.dumps({"exists": False, "handle": h})
+        try:
+            p = json.loads(raw)
+            updated = p.get("updated_at", p.get("created_at", 0))
+            age = int(time.time()) - updated if updated else -1
+            fresh = age >= 0 and age <= PROFILE_TTL
+            return json.dumps({"handle": h, "age_seconds": age, "age_days": age // 86400, "fresh": fresh, "ttl_seconds": PROFILE_TTL, "updated_at": updated})
+        except:
+            return json.dumps({"exists": False, "handle": h})
+
+    @gl.public.view
+    def get_decay_info(self) -> str:
+        """Returns protocol decay configuration."""
+        return json.dumps({"ttl_seconds": PROFILE_TTL, "ttl_days": PROFILE_TTL // 86400, "decay_rule": "Profiles older than 90 days are downgraded one trust tier. Refresh to restore."})
+
+        # === TrustGate: Composability Demo ===
     # Any protocol can gate access based on vouch.fun trust dimensions.
     # This demonstrates how trust grades become composable primitives.
 
