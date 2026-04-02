@@ -334,6 +334,74 @@ export async function gateMembers(gateName: string): Promise<string[]> {
   }
 }
 
+// === Trust Oracle: Chainlink-for-Reputation ===
+
+export async function trustQuery(identifier: string, dimension: string, minGrade: string): Promise<any> {
+  try {
+    const result = await client.readContract({
+      address: contractAddress,
+      functionName: "trust_query",
+      args: [identifier.trim().toLowerCase(), dimension, minGrade],
+    });
+    return typeof result === "string" ? JSON.parse(result) : result;
+  } catch {
+    return { pass: false, reason: "Error querying trust oracle" };
+  }
+}
+
+export async function trustBatchQuery(identifiers: string[], dimension: string, minGrade: string): Promise<any> {
+  try {
+    const result = await client.readContract({
+      address: contractAddress,
+      functionName: "trust_batch_query",
+      args: [JSON.stringify(identifiers), dimension, minGrade],
+    });
+    return typeof result === "string" ? JSON.parse(result) : result;
+  } catch {
+    return { results: [], total: 0, passed: 0 };
+  }
+}
+
+export async function listGates(): Promise<any[]> {
+  try {
+    const result = await client.readContract({
+      address: contractAddress,
+      functionName: "list_gates",
+      args: [],
+    });
+    const parsed = typeof result === "string" ? JSON.parse(result) : result;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function getProfileAge(identifier: string): Promise<any> {
+  try {
+    const result = await client.readContract({
+      address: contractAddress,
+      functionName: "get_profile_age",
+      args: [identifier.trim().toLowerCase()],
+    });
+    return typeof result === "string" ? JSON.parse(result) : result;
+  } catch {
+    return { exists: false };
+  }
+}
+
+export async function getDecayInfo(): Promise<any> {
+  try {
+    const result = await client.readContract({
+      address: contractAddress,
+      functionName: "get_decay_info",
+      args: [],
+    });
+    return typeof result === "string" ? JSON.parse(result) : result;
+  } catch {
+    return { ttl_days: 90 };
+  }
+}
+
 export async function getComparison(handleA: string, handleB: string): Promise<any> {
   try {
     const result = await client.readContract({

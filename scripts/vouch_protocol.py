@@ -543,3 +543,69 @@ class VouchProtocol(gl.Contract):
         gate_key = f"gate:{gate_name}"
         members = reg.get(gate_key, {})
         return json.dumps({"gate": gate_name, "member_count": len(members), "members": members})
+
+    # === Trust Oracle: Chainlink-for-Reputation ===
+    # One-line integration for any agent or contract to query trust.
+
+    @gl.public.view
+    def trust_query(self, identifier: str, dimension: str, min_grade: str) -> str:
+        """Universal trust oracle — returns pass/fail + metadata in one call.
+        Any agent or contract calls this before taking action.
+        Example: trust_query("gakonst", "code", "B") -> {pass: true, grade: "A", score: 85}"""
+        h = _san(identifier)
+        cached = self._gc(h)
+        if not cached:
+            return json.dumps({"pass": False, "reason": "No profile", "handle": h, "dimension": dimension, "required": min_grade})
+        profile = _pa(cached)
+        dim_data = profile.get(dimension, {})
+        grade = dim_data.get("grade", "F") if isinstance(dim_data, dict) else "F"
+        confidence = dim_data.get("confidence", "none") if isinstance(dim_data, dict) else "none"
+        score = profile.get("overall", {}).get("trust_score", 0)
+        tier = profile.get("overall", {}).get("trust_tier", "UNKNOWN")
+        ok = _gv(grade) >= _gv(min_grade)
+        import time
+        updated = 0
+        try:
+            p = json.loads(cached)
+            updated = p.get("updated_at", p.get("created_at", 0))
+        except: pass
+        age = int(time.time()) - updated if updated else -1
+        fresh = age >= 0 and age <= PROFILE_TTL
+        return json.dumps({
+            "pass": ok, "handle": h, "dimension": dimension,
+            "grade": grade, "confidence": confidence, "required": min_grade,
+            "overall_score": score, "overall_tier": tier,
+            "fresh": fresh, "age_days": age // 86400 if age >= 0 else -1
+        })
+
+    @gl.public.view
+    def trust_batch_query(self, identifiers_json: str, dimension: str, min_grade: str) -> str:
+        """Batch trust oracle — check multiple identifiers at once.
+        Input: JSON array of identifiers. Returns results for each."""
+        try: ids = json.loads(identifiers_json)
+        except: return json.dumps({"error": "Invalid JSON array"})
+        results = []
+        for ident in ids[:20]:
+            h = _san(ident)
+            cached = self._gc(h)
+            if not cached:
+                results.append({"handle": h, "pass": False, "reason": "No profile"})
+                continue
+            profile = _pa(cached)
+            dim_data = profile.get(dimension, {})
+            grade = dim_data.get("grade", "F") if isinstance(dim_data, dict) else "F"
+            ok = _gv(grade) >= _gv(min_grade)
+            results.append({"handle": h, "pass": ok, "grade": grade, "required": min_grade})
+        return json.dumps({"results": results, "total": len(results), "passed": sum(1 for r in results if r.get("pass"))})
+
+    @gl.public.view
+    def list_gates(self) -> str:
+        """List all active trust gates and their member counts."""
+        try: reg = json.loads(self.stakes_data)
+        except: return "[]"
+        gates = []
+        for k, v in reg.items():
+            if k.startswith("gate:"):
+                name = k[5:]
+                gates.append({"name": name, "member_count": len(v)})
+        return json.dumps(gates)
