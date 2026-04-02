@@ -263,7 +263,11 @@ function CommandSearch() {
   const navigate = useNavigate();
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const q = query.trim();
+    let q = query.trim();
+    // Strip GitHub/Twitter URL prefixes — users paste full URLs
+    q = q.replace(/^https?:\/\/(www\.)?github\.com\//i, "");
+    q = q.replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, "@");
+    q = q.replace(/\/$/, ""); // trailing slash
     if (q) navigate(`/profile/${encodeURIComponent(q)}`);
   };
 
@@ -510,7 +514,12 @@ function VouchYourself() {
 
   const handleVouch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = handle.trim().replace(/^@/, "");
+    let trimmed = handle.trim();
+    // Strip GitHub/Twitter URL prefixes — users paste full URLs
+    trimmed = trimmed.replace(/^https?:\/\/(www\.)?github\.com\//i, "");
+    trimmed = trimmed.replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, "");
+    trimmed = trimmed.replace(/\/$/, ""); // trailing slash
+    trimmed = trimmed.replace(/^@/, "");
     if (!trimmed) return;
     setPhase("generating");
     setError("");
@@ -602,7 +611,7 @@ function VouchYourself() {
                   return (
                     <div key={dim} className="text-center">
                       <div className={`text-lg font-black font-mono ${GRADE_COLOR[d.grade] || "text-gray-500"}`}>{d.grade}</div>
-                      <div className="text-[8px] text-white/25 uppercase tracking-wider">{DIMENSION_LABELS[dim].slice(0, 3)}</div>
+                      <div className="text-[8px] text-white/25 uppercase tracking-wider">{DIMENSION_LABELS[dim]}</div>
                     </div>
                   );
                 })}

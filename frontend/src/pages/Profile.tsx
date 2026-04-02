@@ -44,8 +44,19 @@ function ProfileSkeleton() {
   );
 }
 
+function cleanHandle(raw: string | undefined): string | undefined {
+  if (!raw) return raw;
+  let h = decodeURIComponent(raw).trim();
+  h = h.replace(/^https?:\/\/(www\.)?github\.com\//i, "");
+  h = h.replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, "");
+  h = h.replace(/\/$/, "");
+  h = h.replace(/^@/, "");
+  return h || raw;
+}
+
 export default function Profile() {
-  const { handle } = useParams<{ handle: string }>();
+  const { handle: rawHandle } = useParams<{ handle: string }>();
+  const handle = cleanHandle(rawHandle);
   const [profile, setProfile] = useState<TrustProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
