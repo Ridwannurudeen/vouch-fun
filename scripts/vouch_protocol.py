@@ -96,7 +96,7 @@ class VouchProtocol(gl.Contract):
             "identity":D("B","medium","GitHub + multi-chain",["GitHub active"]),
             "overall":{"trust_tier":"MODERATE","trust_score":62,"summary":"Multi-chain builder, solid code, growing presence","top_signals":["Multi-chain dev","35+ repos","Consistent activity"]}}
         seeds = [(a1,s1),(a2,s2),(a3,s3)]
-        profiles = {a: json.dumps(s) for a,s in seeds}
+        profiles = {s["identifier"]: json.dumps(s) for a,s in seeds}
         self.profiles_data = json.dumps(profiles)
         self.handle_index = json.dumps({s["identifier"]: a for a,s in seeds})
         self.profile_count = 3
@@ -123,8 +123,8 @@ class VouchProtocol(gl.Contract):
         profile["sources"] = src
         fj = json.dumps(profile)
         p = self._gp()
-        new = addr not in p
-        p[addr] = fj
+        new = ident not in p
+        p[ident] = fj
         self._sp(p)
         idx = self._gi()
         if ident not in idx:
@@ -218,7 +218,7 @@ class VouchProtocol(gl.Contract):
         caller = str(gl.message.sender_address).lower()
         if QUERY_FEE > 0:
             self.fee_pool += gl.message.value
-        cached = self._gc(caller)
+        cached = self._gc(clean)
         if cached:
             self.query_count += 1
             return cached
@@ -342,8 +342,7 @@ class VouchProtocol(gl.Contract):
     @gl.public.view
     def get_profile_by_handle(self, identifier: str) -> str:
         h = _san(identifier)
-        a = self._gi().get(h, "")
-        return self._gc(a) or "{}" if a else "{}"
+        return self._gc(h) or "{}"
 
     @gl.public.view
     def get_trust_tier(self, address: str) -> str:
