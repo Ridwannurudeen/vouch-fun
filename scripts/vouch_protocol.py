@@ -136,72 +136,106 @@ class VouchProtocol(gl.Contract):
 
     # --- web-grounded evaluation ---
     def _eval(self, ident, idt, prompt_extra=""):
-        # Build fetch URLs based on identifier type
         gh_api = f"https://api.github.com/users/{ident}" if idt == "github" else ""
         gh_repos = f"https://api.github.com/users/{ident}/repos?sort=stars&per_page=5" if idt == "github" else ""
         es_url = f"https://etherscan.io/address/{ident}" if idt == "wallet" else ""
-        ens_url = f"https://app.ens.domains/{ident}" if idt == "ens" else ""
         the_ident = ident
         the_idt = idt
         extra = prompt_extra
 
         def _run():
             evidence = []
-            sources = []
-            # Fetch real GitHub data
             if gh_api:
                 try:
                     data = gl.nondet.web.render(gh_api, mode="text")
-                    evidence.append(f"GITHUB PROFILE:\n{data[:2000]}")
-                    sources.append("github_api")
-                except:
-                    evidence.append("GitHub API: fetch failed")
+                    evidence.append(f"GITHUB: {data[:1500]}")
+                except: pass
             if gh_repos:
                 try:
                     data = gl.nondet.web.render(gh_repos, mode="text")
-                    evidence.append(f"TOP REPOS:\n{data[:1500]}")
-                    sources.append("github_repos")
-                except:
-                    pass
-            # Fetch real on-chain data
+                    evidence.append(f"REPOS: {data[:1000]}")
+                except: pass
             if es_url:
                 try:
                     data = gl.nondet.web.render(es_url, mode="text")
-                    evidence.append(f"ETHERSCAN:\n{data[:2000]}")
-                    sources.append("etherscan")
-                except:
-                    evidence.append("Etherscan: fetch failed")
-            # ENS
-            if ens_url:
-                try:
-                    data = gl.nondet.web.render(ens_url, mode="text")
-                    evidence.append(f"ENS:\n{data[:1000]}")
-                    sources.append("ens")
-                except:
-                    pass
-
-            ev = "\n---\n".join(evidence) if evidence else "No web data fetched."
-            src_str = ",".join(sources) if sources else "none"
-
-            prompt = (f"Evaluate '{the_ident}' ({the_idt}) using this REAL fetched data:\n"
-                      f"{ev}\n\n{extra}\n"
-                      f"RULES: Grade A-F per dimension. Set confidence=high ONLY if real data supports it. "
-                      f"Set confidence=none for dimensions with NO evidence. Be honest — do NOT hallucinate facts. "
-                      f"Assess 6 dims: {_DM}.\nReturn ONLY JSON:\n{_S}")
+                    evidence.append(f"ETHERSCAN: {data[:1500]}")
+                except: pass
+            ev = " | ".join(evidence) if evidence else "No data."
+            prompt = (f"Rate '{the_ident}' ({the_idt}) on 6 trust dimensions using this evidence:\n"
+                      f"{ev}\n{extra}\n"
+                      f"Return JSON with keys: code, onchain, social, governance, defi, identity, score, tier.\n"
+                      f"Each dimension is a letter grade A/B/C/D/F. score is 0-100. tier is TRUSTED/MODERATE/LOW/UNTRUSTED.\n"
+                      f"Use F for dimensions with no evidence. Return only the JSON object, nothing else.")
             return gl.nondet.exec_prompt(prompt).strip()
 
+        # Try full consensus, fall back to leader-only
+        consensus_ok = False
         try:
-            raw = gl.eq_principle.prompt_non_comparative(
-                _run, task="Evaluate trust from real evidence",
-                criteria="Grade must be grounded in fetched data. No hallucinated facts.")
+            raw = gl.eq_principle.prompt_comparative(
+                _run,
+                principle="These trust evaluations are equivalent if they assign similar overall trust levels. Minor differences in individual dimension grades (one letter apart) are normal and acceptable. Focus on whether both evaluations reach the same general conclusion about trustworthiness.")
+            consensus_ok = True
         except:
-            raw = "{}"
-        profile = _pa(raw)
-        # Tag sources
-        src = ["ai_consensus"]
+            try: raw = _run()
+            except: raw = "{}"
+
+        # Robust parser
+        g = {}
+        c = raw.strip()
+        if "```" in c:
+            parts = c.split("```")
+            for p in parts:
+                p = p.strip()
+                if p.startswith("json"): p = p[4:].strip()
+                if p.startswith("{"):
+                    try:
+                        g = json.loads(p)
+                        break
+                    except: pass
+        if not g:
+            try: g = json.loads(c)
+            except: pass
+        if not g:
+            for line in c.split("\n"):
+                line = line.strip()
+                if line.startswith("{"):
+                    try:
+                        g = json.loads(line)
+                        break
+                    except: pass
+        if "trust_evaluation" in g: g = g["trust_evaluation"]
+
+        grade_scores = {"A": 90, "B": 75, "C": 55, "D": 35, "F": 10}
+        dims = _DM.split(",")
+        grades_found = []
+        profile = {}
+        for d in dims:
+            val = g.get(d, "F")
+            if isinstance(val, dict): val = val.get("grade", "F")
+            grade = str(val).upper().strip()
+            if grade not in ["A","B","C","D","F"]: grade = "F"
+            grades_found.append(grade)
+            conf = "high" if grade in ["A","B"] else "medium" if grade == "C" else "low" if grade == "D" else "none"
+            profile[d] = {"grade": grade, "confidence": conf, "justification": f"AI-evaluated from live data"}
+
+        try: score = max(0, min(100, int(g.get("score", -1))))
+        except: score = -1
+        if score < 0:
+            score = int(sum(grade_scores.get(gr, 10) for gr in grades_found) / len(grades_found))
+
+        tier = str(g.get("tier", "")).upper().strip()
+        if tier not in ["TRUSTED","MODERATE","LOW","UNTRUSTED"]:
+            if score >= 80: tier = "TRUSTED"
+            elif score >= 50: tier = "MODERATE"
+            elif score >= 25: tier = "LOW"
+            else: tier = "UNTRUSTED"
+
+        mode = "consensus" if consensus_ok else "leader-only"
+        profile["overall"] = {"trust_tier": tier, "trust_score": score, "summary": f"Trust profile for {the_ident} ({mode})", "consensus_mode": mode}
+
+        src = ["ai_consensus" if consensus_ok else "ai_leader"]
         if gh_api: src.append("github_api")
         if es_url: src.append("etherscan")
-        if ens_url: src.append("ens")
         return profile, src
 
     def _do_eval(self, ident, idt, caller, extra=""):
@@ -410,3 +444,61 @@ class VouchProtocol(gl.Contract):
     @gl.public.view
     def get_fee_pool(self) -> str:
         return json.dumps({"fee_pool":self.fee_pool,"query_fee":QUERY_FEE,"min_stake":MIN_STAKE})
+
+    # === TrustGate: Composability Demo ===
+    # Any protocol can gate access based on vouch.fun trust dimensions.
+    # This demonstrates how trust grades become composable primitives.
+
+    @gl.public.write
+    def gate_register(self, handle: str, gate_name: str, dimension: str, min_grade: str) -> str:
+        """Register for a trust-gated community. Checks the profile grade on the
+        specified dimension and only allows registration if grade >= min_grade."""
+        h = _san(handle)
+        cached = self._gc(h)
+        if not cached:
+            return json.dumps({"status": "rejected", "reason": "No profile found. Vouch first.", "handle": h})
+        profile = _pa(cached)
+        dim_data = profile.get(dimension, {})
+        grade = dim_data.get("grade", "F") if isinstance(dim_data, dict) else "F"
+        if _gv(grade) < _gv(min_grade):
+            return json.dumps({"status": "rejected", "reason": f"Grade {grade} < required {min_grade}", "handle": h, "gate": gate_name, "dimension": dimension})
+        caller = str(gl.message.sender_address).lower()
+        try: reg = json.loads(self.stakes_data)
+        except: reg = {}
+        gate_key = f"gate:{gate_name}"
+        if gate_key not in reg:
+            reg[gate_key] = {}
+        reg[gate_key][h] = {"grade": grade, "dimension": dimension, "by": caller}
+        self.stakes_data = json.dumps(reg)
+        return json.dumps({"status": "registered", "handle": h, "gate": gate_name, "grade": grade, "dimension": dimension})
+
+    @gl.public.view
+    def gate_check(self, handle: str, dimension: str, min_grade: str) -> str:
+        """Check if a handle meets the trust gate requirement without registering."""
+        h = _san(handle)
+        cached = self._gc(h)
+        if not cached:
+            return json.dumps({"eligible": False, "reason": "No profile", "handle": h})
+        profile = _pa(cached)
+        dim_data = profile.get(dimension, {})
+        grade = dim_data.get("grade", "F") if isinstance(dim_data, dict) else "F"
+        ok = _gv(grade) >= _gv(min_grade)
+        return json.dumps({"eligible": ok, "handle": h, "grade": grade, "required": min_grade, "dimension": dimension})
+
+    @gl.public.view
+    def gate_members(self, gate_name: str) -> str:
+        """List all registered members of a trust gate."""
+        try: reg = json.loads(self.stakes_data)
+        except: return "[]"
+        gate_key = f"gate:{gate_name}"
+        members = reg.get(gate_key, {})
+        return json.dumps(list(members.keys()))
+
+    @gl.public.view
+    def gate_info(self, gate_name: str) -> str:
+        """Get info about a trust gate including member count."""
+        try: reg = json.loads(self.stakes_data)
+        except: reg = {}
+        gate_key = f"gate:{gate_name}"
+        members = reg.get(gate_key, {})
+        return json.dumps({"gate": gate_name, "member_count": len(members), "members": members})

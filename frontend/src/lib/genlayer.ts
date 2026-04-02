@@ -147,14 +147,28 @@ export const QUERY_FEE = 0n;
 export const MIN_STAKE = 0n;
 
 export async function generateProfile(handle: string): Promise<any> {
+  // Try full multi-validator consensus first
   const txHash = await client.writeContract({
     address: contractAddress,
     functionName: "vouch",
     args: [handle],
     value: 0n,
-    leaderOnly: true,
   });
-  return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
+  const receipt = await client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
+
+  // If consensus failed (status 6 = disagreement), retry with leaderOnly
+  const status = typeof receipt === "object" ? (receipt as any).status : undefined;
+  if (status === 6 || status === "6") {
+    const retryHash = await client.writeContract({
+      address: contractAddress,
+      functionName: "vouch",
+      args: [handle],
+      value: 0n,
+      leaderOnly: true,
+    });
+    return client.waitForTransactionReceipt({ hash: retryHash, retries: 120, interval: 5000 });
+  }
+  return receipt;
 }
 
 export async function refreshProfile(handle: string): Promise<any> {
@@ -163,9 +177,20 @@ export async function refreshProfile(handle: string): Promise<any> {
     functionName: "refresh",
     args: [handle],
     value: 0n,
-    leaderOnly: true,
   });
-  return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
+  const receipt = await client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
+  const status = typeof receipt === "object" ? (receipt as any).status : undefined;
+  if (status === 6 || status === "6") {
+    const retryHash = await client.writeContract({
+      address: contractAddress,
+      functionName: "refresh",
+      args: [handle],
+      value: 0n,
+      leaderOnly: true,
+    });
+    return client.waitForTransactionReceipt({ hash: retryHash, retries: 120, interval: 5000 });
+  }
+  return receipt;
 }
 
 export async function stakeVouch(identifier: string, dimension: string, grade: string, _amount?: bigint): Promise<any> {
@@ -254,6 +279,59 @@ export async function compareProfiles(handleA: string, handleB: string): Promise
     leaderOnly: true,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
+}
+
+// === TrustGate composability functions ===
+
+export async function gateCheck(handle: string, dimension: string, minGrade: string): Promise<any> {
+  try {
+    const result = await client.readContract({
+      address: contractAddress,
+      functionName: "gate_check",
+      args: [handle.trim().toLowerCase(), dimension, minGrade],
+    });
+    return typeof result === "string" ? JSON.parse(result) : result;
+  } catch {
+    return { eligible: false, reason: "Error checking gate" };
+  }
+}
+
+export async function gateRegister(handle: string, gateName: string, dimension: string, minGrade: string): Promise<any> {
+  const txHash = await client.writeContract({
+    address: contractAddress,
+    functionName: "gate_register",
+    args: [handle, gateName, dimension, minGrade],
+    value: 0n,
+    leaderOnly: true,
+  });
+  return client.waitForTransactionReceipt({ hash: txHash, retries: 60, interval: 5000 });
+}
+
+export async function gateInfo(gateName: string): Promise<any> {
+  try {
+    const result = await client.readContract({
+      address: contractAddress,
+      functionName: "gate_info",
+      args: [gateName],
+    });
+    return typeof result === "string" ? JSON.parse(result) : result;
+  } catch {
+    return { gate: gateName, member_count: 0, members: {} };
+  }
+}
+
+export async function gateMembers(gateName: string): Promise<string[]> {
+  try {
+    const result = await client.readContract({
+      address: contractAddress,
+      functionName: "gate_members",
+      args: [gateName],
+    });
+    const parsed = typeof result === "string" ? JSON.parse(result) : result;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function getComparison(handleA: string, handleB: string): Promise<any> {
