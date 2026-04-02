@@ -148,9 +148,21 @@ export default function Profile() {
   );
 
   const handleCopyUrl = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const url = window.location.href;
+    const text = profile
+      ? `My vouch.fun trust score: ${profile.overall.trust_score}/100 (${profile.overall.trust_tier}) — ${profile.overall.summary}\n\nGet yours:`
+      : "";
+    if (navigator.share && profile) {
+      navigator.share({ title: "My Vouch Score", text, url }).catch(() => {
+        navigator.clipboard.writeText(`${text} ${url}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    } else {
+      navigator.clipboard.writeText(profile ? `${text} ${url}` : url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const profileId = profile?.identifier || (profile as any)?.handle || handle || "";

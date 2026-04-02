@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, useInView, AnimatePresence } from "framer-motion";
-import { readProfileByHandle } from "../lib/genlayer";
+import { readProfileByHandle, generateProfile } from "../lib/genlayer";
 import type { TrustProfile, DimensionKey } from "../types";
 import { DIMENSIONS, DIMENSION_LABELS } from "../types";
 
@@ -498,6 +498,210 @@ const DIM_BENTO: { key: DimensionKey; label: string; desc: string; icon: string;
 ];
 
 /* ═══════════════════════════════════════════════════
+   VOUCH YOURSELF — the viral hook
+   ═══════════════════════════════════════════════════ */
+function VouchYourself() {
+  const [handle, setHandle] = useState("");
+  const [phase, setPhase] = useState<"input" | "generating" | "done">("input");
+  const [profile, setProfile] = useState<TrustProfile | null>(null);
+  const [error, setError] = useState("");
+  const [slow, setSlow] = useState(false);
+  const navigate = useNavigate();
+
+  const handleVouch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = handle.trim().replace(/^@/, "");
+    if (!trimmed) return;
+    setPhase("generating");
+    setError("");
+    setSlow(false);
+    const slowTimer = setTimeout(() => setSlow(true), 60000);
+    try {
+      await generateProfile(trimmed);
+      const p = await readProfileByHandle(trimmed);
+      if (p && p.overall) {
+        setProfile(p);
+        setPhase("done");
+      } else {
+        // Profile generated but maybe needs a moment — navigate to profile page
+        navigate(`/profile/${encodeURIComponent(trimmed)}`);
+      }
+    } catch (err: any) {
+      setError(err.message || "Generation failed — validators may be busy");
+      setPhase("input");
+    } finally {
+      clearTimeout(slowTimer);
+    }
+  };
+
+  const tierColor: Record<string, string> = {
+    TRUSTED: "from-emerald-500 to-emerald-600",
+    MODERATE: "from-amber-500 to-amber-600",
+    LOW: "from-red-500 to-red-600",
+    UNKNOWN: "from-gray-500 to-gray-600",
+  };
+
+  const handleShare = () => {
+    const url = `${window.location.origin}/profile/${profile?.identifier}`;
+    const text = `My vouch.fun trust score: ${profile?.overall.trust_score}/100 (${profile?.overall.trust_tier}) — ${profile?.overall.summary}\n\nGet yours:`;
+    if (navigator.share) {
+      navigator.share({ title: "My Vouch Score", text, url }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(`${text} ${url}`);
+    }
+  };
+
+  if (phase === "done" && profile) {
+    const score = profile.overall.trust_score;
+    const tier = profile.overall.trust_tier;
+    return (
+      <section className="py-16 sm:py-20 px-4">
+        <div className="max-w-2xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+            className="glass rounded-3xl p-8 sm:p-10 text-center relative overflow-hidden"
+          >
+            {/* Background glow */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className={`absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-gradient-to-br ${tierColor[tier]} opacity-10 blur-[80px]`} />
+            </div>
+
+            <div className="relative">
+              <motion.div
+                initial={{ scale: 0 }} animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass text-[11px] text-emerald-400 font-mono mb-6"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                Profile Generated
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                <h3 className="text-2xl font-black font-mono text-white mb-1">{profile.identifier}</h3>
+                <div className="flex justify-center mb-6">
+                  <div className="relative">
+                    <ScoreRing score={score} size={120} />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-4xl font-black text-white font-mono leading-none">{score}</span>
+                      <span className="text-[9px] text-white/30 uppercase tracking-widest mt-1">{tier}</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Dimension grades */}
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+                className="flex justify-center gap-4 mb-6"
+              >
+                {DIMENSIONS.map((dim: DimensionKey) => {
+                  const d = profile[dim];
+                  if (!d?.grade) return null;
+                  return (
+                    <div key={dim} className="text-center">
+                      <div className={`text-lg font-black font-mono ${GRADE_COLOR[d.grade] || "text-gray-500"}`}>{d.grade}</div>
+                      <div className="text-[8px] text-white/25 uppercase tracking-wider">{DIMENSION_LABELS[dim].slice(0, 3)}</div>
+                    </div>
+                  );
+                })}
+              </motion.div>
+
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
+                className="text-sm text-white/30 mb-6 max-w-md mx-auto">
+                {profile.overall.summary}
+              </motion.p>
+
+              {/* Action buttons */}
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
+                className="flex justify-center gap-3">
+                <Link to={`/profile/${profile.identifier}`}
+                  className="px-6 py-3 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-xl font-semibold text-sm hover:bg-indigo-500/30 transition-all">
+                  Full Profile
+                </Link>
+                <button onClick={handleShare}
+                  className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl font-semibold text-sm hover:from-indigo-400 hover:to-violet-400 transition-all shadow-lg shadow-indigo-500/20">
+                  Share My Score
+                </button>
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="py-16 sm:py-20 px-4">
+      <div className="max-w-2xl mx-auto text-center">
+        <FadeIn>
+          <span className="text-[10px] text-indigo-400/60 uppercase tracking-[0.2em] font-mono font-semibold block mb-3">Get your score</span>
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight mb-3">
+            Vouch <span className="gradient-text">Yourself</span>
+          </h2>
+          <p className="text-sm text-white/25 max-w-md mx-auto mb-8">
+            5 AI validators will independently evaluate your on-chain, code, and social presence — then reach consensus on your trust profile.
+          </p>
+
+          {phase === "generating" ? (
+            <div className="glass rounded-2xl p-8">
+              <div className="flex flex-col items-center gap-4">
+                {/* Animated dots */}
+                <div className="flex gap-2">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <motion.div
+                      key={i}
+                      className="w-3 h-3 rounded-full bg-indigo-500"
+                      animate={{ scale: [1, 1.4, 1], opacity: [0.3, 1, 0.3] }}
+                      transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
+                    />
+                  ))}
+                </div>
+                <div className="text-sm text-white/40 font-mono">Validators deliberating on <span className="text-indigo-400">{handle}</span>...</div>
+                <div className="text-[10px] text-white/15 font-mono">This takes 30-120 seconds — AI consensus in progress</div>
+                {slow && (
+                  <div className="text-xs text-amber-400/60 mt-2">Taking longer than usual — validators are still working...</div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleVouch} className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto">
+              <div className="relative flex-1">
+                <input
+                  value={handle}
+                  onChange={(e) => setHandle(e.target.value)}
+                  placeholder="Your GitHub handle"
+                  className="w-full bg-transparent text-white placeholder-white/20 pl-5 pr-4 py-4 text-base font-mono outline-none glass rounded-xl border border-white/[.06] focus:border-indigo-500/40 transition-colors"
+                />
+              </div>
+              <motion.button
+                type="submit"
+                disabled={!handle.trim()}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                className="px-8 py-4 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl font-bold text-sm
+                           hover:from-indigo-400 hover:to-violet-400 disabled:from-gray-700 disabled:to-gray-700 disabled:text-gray-500
+                           transition-all shadow-lg shadow-indigo-500/20 disabled:shadow-none"
+              >
+                Vouch Me
+              </motion.button>
+            </form>
+          )}
+
+          {error && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="mt-4 text-sm text-red-400/80 glass rounded-xl px-4 py-3 inline-block border border-red-500/20">
+              {error}
+            </motion.div>
+          )}
+        </FadeIn>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════════════
    MAIN PAGE
    ═══════════════════════════════════════════════════ */
 export default function Home() {
@@ -599,6 +803,9 @@ export default function Home() {
             </div>
           </div>
         </FadeIn>
+
+        {/* ─── VOUCH YOURSELF — the viral hook ─── */}
+        <VouchYourself />
 
         {/* ─── #2 FIX: WHY AGENTS — left-aligned title, asymmetric cards ─── */}
         <section className="py-20 sm:py-28 px-4">
