@@ -336,7 +336,7 @@ Every profile stores its provenance:
 | Composability | `gl.ContractAt()` for native cross-contract trust queries |
 | Frontend | React 19 + TypeScript + Vite + Tailwind CSS 4 |
 | Visualization | Recharts (6-axis radar charts) + Framer Motion (animations) |
-| SDK | genlayer-js 0.23.1 |
+| SDK | genlayer-js 0.28.2 |
 
 ---
 
@@ -344,34 +344,29 @@ Every profile stores its provenance:
 
 | Contract | Address | Description |
 |----------|---------|-------------|
-| VouchProtocol | `0x3F32FeD0eC4A1D34C81316DE8773674cBB4ea507` (Bradbury) | Core trust synthesis oracle --- 6 dimensions, 3 seed profiles |
-| TrustGate | Pending deploy (Bradbury validators recovering) | Dimension-gated registration consumer (composability demo) |
+| VouchProtocol v4 | `0xB400f98aFAADc9819b4F465c66ed0bf10be01028` (Bradbury) | Core trust synthesis oracle --- web-grounded data, 6 dimensions, economic model |
+| TrustGate | Pending deploy (depends on VouchProtocol reads) | Dimension-gated registration consumer (composability demo) |
 | Frontend | https://vouch.gudman.xyz | Live web application |
 
 ---
 
 ## Roadmap
 
-### v3 (now) --- Multi-Dimensional AI Synthesis
-- 6 trust dimensions with graded assessments
-- Confidence levels for honest uncertainty reporting
+### v4 (now) --- Web-Grounded Trust Synthesis
+- 6 trust dimensions with graded assessments + confidence levels
+- **Real web data**: validators use `gl.nondet.web.render()` to fetch GitHub API, Etherscan, ENS
+- AI grades grounded in actual evidence, not hallucinated from training data
+- Query fees (1000 wei), stake-to-vouch (5000 wei min), dispute slashing
 - Universal input resolution (GitHub, ENS, wallet, Twitter)
 - Composable view methods: `get_dimension()`, `get_trust_score()`, `get_confidence()`
-- TrustGate consumer contract proving cross-contract composability
-- Dispute system with permanent accountability tracking
+- Dispute system with fresh web data re-evaluation
 
-### v4 --- Verified Data Feeds
-- GitHub API indexer providing real repo/commit/star data to validators
-- On-chain indexer feeding actual transaction history and contract deployments
-- Social API aggregator for Twitter/Farcaster/Lens activity data
-- Validators receive real data alongside LLM synthesis, increasing confidence levels
-
-### v5 --- Mainnet + Economics
+### v5 --- Mainnet + Enhanced Economics
 - GenLayer mainnet deployment with transaction fee revenue (up to 20% to deployed contracts)
 - Explicit vouch bonds (e.g., 10 GEN locked per evaluation)
 - Slashing mechanism for frequently-disputed vouches
-- Staking for profile generation
 - Challenge/dispute economics with disputer rewards
+- TrustGate consumer contract proving cross-contract composability
 
 ---
 
@@ -380,7 +375,7 @@ Every profile stores its provenance:
 ```
 vouch-fun/
   contracts/
-    vouch_protocol.py          # Core trust oracle: 6-dimension AI synthesis (11,977 bytes)
+    vouch_protocol.py          # Core trust oracle: web-grounded 6-dimension AI synthesis (17,610 bytes)
     trust_gate.py              # Dimension-gated consumer contract (composability demo)
   frontend/
     index.html                 # OG meta tags, favicon, Inter font
@@ -454,4 +449,4 @@ python -m pytest tests/ -v
 
 5. **Universal input resolution** --- Accept any identifier type (GitHub handle, ENS name, wallet address, Twitter handle) through a single `vouch()` method. The contract auto-detects the type and adjusts the evaluation prompt accordingly. This removes the friction of "which identifier do I need?" --- the answer is "whatever you have."
 
-6. **Synthesis, not verification** --- We are explicit: vouch.fun synthesizes trust judgment from AI consensus. We do not claim to scrape APIs or verify data in real-time (that is v4). The value is in the judgment --- 5 independent AI validators reaching consensus on a subjective question --- not in raw data aggregation. This honest framing is stronger than overclaiming.
+6. **Evidence-grounded synthesis** --- v4 validators fetch real data via `gl.nondet.web.render()` from GitHub API, Etherscan, and ENS before grading. AI grades are grounded in actual evidence (real repo counts, transaction history, ENS records), not hallucinated from training data. The value is in the judgment --- 5 independent AI validators reaching consensus on a subjective question, informed by real evidence --- combining data aggregation with AI synthesis.

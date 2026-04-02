@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "framer-motion": "^12.38.0",
-    "genlayer-js": "^0.23.1",
+    "genlayer-js": "^0.28.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.2",
