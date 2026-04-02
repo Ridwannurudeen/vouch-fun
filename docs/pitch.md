@@ -74,19 +74,71 @@ They give data. We give judgment with confidence.
 ## What's Built
 
 - **VouchProtocol** -- Intelligent Contract with web-grounded 6-dimension evaluation via `gl.nondet.web.render()`, universal identifier input (GitHub/ENS/wallet/@twitter), query fees, stake-to-vouch, dispute+slash system, comparison engine
-- **TrustGate** -- Consumer contract demonstrating dimension-gated registration via cross-contract calls
+- **TrustGate** -- Consumer contract: dimension-gated registration via cross-contract calls
+- **TrustLending** -- Consumer contract: borrow limits scale by trust score (TRUSTED: 10K, MODERATE: 5K, LOW: 1K). DeFi dimension gate + overall score threshold
+- **AgentMarketplace** -- Consumer contract: agent hiring gate. Jobs require minimum grade on any dimension. Agents bid, contract enforces trust threshold, poster awards
 - **Economic model** -- Query fees (1000 wei/vouch), stake-to-vouch (5000 wei min), dispute slashing of wrong stakers
-- **React frontend** -- 6-axis radar chart, dimension cards with confidence badges, trust scores (0-100), staking UI, universal search, comparison view, integration docs
-- **6 demo profiles** -- Full-spectrum (vbuterin), domain-skewed (torvalds), honest-low-confidence (ridwannurudeen), and 3 more covering the assessment range
+- **Score Decay** -- Profiles expire after 90 days. Agents must `refresh()` to maintain their trust tier. Each refresh = a paid transaction. Stale profiles drop to UNKNOWN tier, losing access to gated services
+- **Vouch Yourself** -- Viral onboarding: enter your GitHub handle, see your trust score, share it. "What's your vouch score?" drives organic growth
+- **React frontend** -- 6-axis radar chart, dimension cards with confidence badges, trust scores (0-100), staking UI, universal search, comparison view, vouch-yourself flow, social sharing
+- **Agent trust demo** -- End-to-end script showing Agent A verifying Agent B via vouch.fun before hiring through AgentMarketplace
+
+## Transaction Volume Projections
+
+vouch.fun generates recurring transactions at scale. Every profile action is an on-chain transaction paying fees.
+
+| Action | Fee | Frequency | Notes |
+|--------|-----|-----------|-------|
+| `vouch()` | 1000 wei | Once per profile | New profile creation |
+| `refresh()` | 1000 wei | Every 90 days | Score decay forces refresh to keep tier |
+| `stake_vouch()` | 5000+ wei | Per endorsement | Skin-in-the-game staking |
+| `dispute()` | 0 | Per challenge | Re-evaluates with slash on wrong stakers |
+| `gate_check()` | 0 (view) | Per consumer call | Free reads incentivize consumer adoption |
+
+**Conservative projection at 10K profiles:**
+
+| Metric | Monthly | Annual |
+|--------|---------|--------|
+| New vouches | 500 | 6,000 |
+| Refreshes (90-day cycle) | 3,333 | 40,000 |
+| Staked vouches | 200 | 2,400 |
+| Disputes | 50 | 600 |
+| **Total write tx** | **4,083** | **49,000** |
+| Gate checks (reads) | 20,000+ | 240,000+ |
+
+The refresh cycle is the engine: 10K profiles × 4 refreshes/year = 40K paid transactions minimum. More profiles = linear growth. More consumer contracts = exponential gate checks driving new vouches.
+
+**At 100K profiles:** 490K write tx/year + 2.4M reads. GenLayer earns 20% of fees on every write.
+
+## Composability Network Effect
+
+The more consumer contracts integrate vouch.fun, the more valuable each profile becomes:
+
+```
+                    ┌─────────────┐
+                    │  vouch.fun  │  ← The trust oracle
+                    │  (1 profile)│
+                    └──────┬──────┘
+                           │
+           ┌───────────────┼───────────────┐
+           │               │               │
+     ┌─────┴─────┐  ┌─────┴─────┐  ┌─────┴─────┐
+     │ TrustGate │  │  Lending  │  │ Marketplace│
+     │ (register)│  │ (borrow)  │  │  (hire)    │
+     └───────────┘  └───────────┘  └───────────┘
+```
+
+Each consumer contract is a reason to vouch. Each new reason drives more transactions. GenLayer benefits from every single one.
 
 ## Roadmap
 
 | Version | Status       | Focus                                                   |
 |---------|-------------|---------------------------------------------------------|
 | v3      | Previous    | 6-dimension AI synthesis, confidence levels, TrustGate  |
-| v4      | Now (live)  | Web-grounded data (gl.nondet.web.render), query fees, stake-to-vouch, slash-on-dispute |
-| v5      | Mainnet     | Multi-chain indexers, enhanced staking economics, up to 20% protocol revenue share |
+| v4      | Now (live)  | Web-grounded data, query fees, stake-to-vouch, slash-on-dispute, consumer contracts (lending + marketplace) |
+| v5      | Next        | Score decay enforcement (90-day expiry), profile refresh loop, enhanced staking economics |
+| v6      | Mainnet     | Multi-chain indexers, SDK package, up to 20% protocol revenue share, consumer contract ecosystem |
 
 ---
 
-**One sentence:** vouch.fun is the first composable trust primitive where decentralized AI consensus fetches real web data and synthesizes evidence-grounded 6-dimensional judgment -- with query fees, staking, and slash economics -- for the agentic economy.
+**One sentence:** vouch.fun is a composable trust oracle where decentralized AI consensus fetches real web data and synthesizes 6-dimensional judgment -- with query fees, staking, score decay, and consumer contracts -- generating recurring transactions that scale linearly with adoption for the agentic economy.

@@ -154,28 +154,44 @@ score = gl.ContractAt(VOUCH_ADDRESS).get_trust_score(address)
 # Returns: 0-100
 ```
 
-### TrustGate --- dimension-gated consumer contract
+### Consumer Contracts --- 3 deployed examples
+
+**TrustGate** --- dimension-gated registration:
+```python
+vouch = gl.ContractAt(Address(self.vouch_address))
+grade = vouch.get_dimension(caller, "code")  # One line
+if grade < min_grade: raise Exception("Insufficient trust")
+```
+
+**TrustLending** --- borrow limits by trust score:
+```python
+score = vouch.get_trust_score(caller)   # 0-100
+tier = vouch.get_trust_tier(caller)     # TRUSTED/MODERATE/LOW/UNKNOWN
+# TRUSTED: 10K wei @ 2% | MODERATE: 5K @ 5% | LOW: 1K @ 10% | UNKNOWN: 0
+```
+
+**AgentMarketplace** --- trust-gated agent hiring:
+```python
+# Post a job requiring B+ code grade
+post_job("Audit my contract", "Full audit", "code", "B")
+# Only agents with B+ code on vouch.fun can bid
+bid("0", "I'll audit with formal verification")  # Contract enforces grade check
+```
+
+### SDK --- one-line integration
 
 ```python
-class TrustGate(gl.Contract):
-    vouch_address: str
-    required_dimension: str   # "code", "defi", "governance", etc.
-    min_grade: str            # "B" = B or above required
+from vouch import VouchClient
 
-    @gl.public.write
-    def register(self, name: str) -> str:
-        caller = str(gl.message.sender_account).lower()
-        vouch = gl.ContractAt(Address(self.vouch_address))
-        dim_raw = str(vouch.get_dimension(caller, self.required_dimension))
-        dim = json.loads(dim_raw)
-        grade = dim.get("grade", "N/A")
-        confidence = dim.get("confidence", "none")
-        if confidence == "none":
-            raise Exception(f"No {self.required_dimension} data")
-        if grade_val(grade) < grade_val(self.min_grade):
-            raise Exception(f"Insufficient: {grade} (need {self.min_grade}+)")
-        # Register the caller
-        ...
+client = VouchClient("0xB400f98aFAADc9819b4F465c66ed0bf10be01028")
+
+# Simple checks
+if client.is_trusted(addr): proceed()
+if client.meets_threshold(addr, "code", "B"): hire()
+if client.meets_score(addr, 60): allow_borrow()
+
+# Comprehensive gate
+result = client.gate_check(addr, min_score=60, dimension="code", min_grade="B")
 ```
 
 ### Use Cases
@@ -184,13 +200,13 @@ Each consumer picks the dimension it cares about:
 
 | Consumer | Checks | Why |
 |----------|--------|-----|
-| Agent Marketplace | `get_dimension(addr, "code")` | Only devs with proven code skills register agents |
-| DeFi Protocol | `get_dimension(addr, "defi")` | Gate pool access on financial responsibility |
-| DAO | `get_dimension(addr, "governance")` | Weight votes by governance participation history |
+| Agent Marketplace | `get_dimension(addr, "code")` | Only devs with proven code skills bid on jobs |
+| Lending Protocol | `get_trust_score(addr)` + `get_dimension(addr, "defi")` | Borrow limits scale by trust |
+| DAO | `get_dimension(addr, "governance")` | Weight votes by participation history |
 | Social App | `get_dimension(addr, "social")` | Filter by public reputation |
 | Identity Gate | `get_confidence(addr, "identity")` | Require high-confidence identity verification |
 
-That is composable infrastructure. The same trust profile serves every use case without modification.
+One trust profile, many consumers. The same `vouch()` transaction serves every use case.
 
 ---
 
@@ -285,14 +301,30 @@ Every profile stores its provenance:
 | `get_stats()` | --- | JSON | Profile count, query count, dispute count |
 | `get_comparison(id_a, id_b)` | `str, str` | Comparison JSON | Read stored comparison result |
 
-### TrustGate Consumer API
+### Consumer Contract APIs
 
-| Method | Parameters | Description |
-|--------|------------|-------------|
-| `register(name)` | `str` | Register if caller meets dimension + grade requirement |
-| `get_registrations()` | --- | All registered addresses and their grades |
-| `get_config()` | --- | Gate configuration: vouch address, required dimension, min grade |
-| `is_registered(address)` | `str` | Check if address is registered |
+**TrustGate** --- dimension-gated registration:
+| Method | Description |
+|--------|-------------|
+| `register(name)` | Register if caller meets dimension + grade requirement |
+| `get_registrations()` | All registered addresses and their grades |
+| `is_registered(address)` | Check if address is registered |
+
+**TrustLending** --- trust-scored lending:
+| Method | Description |
+|--------|-------------|
+| `deposit()` | Deposit into lending pool (send value) |
+| `borrow(amount)` | Borrow up to tier limit (TRUSTED: 10K, MODERATE: 5K, LOW: 1K) |
+| `repay()` | Repay loan with sent value |
+| `get_borrow_limit(address)` | Check max borrow + rate for any address |
+
+**AgentMarketplace** --- trust-gated hiring:
+| Method | Description |
+|--------|-------------|
+| `post_job(title, desc, dimension, min_grade)` | Post job with trust requirements |
+| `bid(job_id, proposal)` | Bid on job (contract enforces grade check) |
+| `award_job(job_id, winner)` | Poster awards job to bidder |
+| `check_eligibility(address, job_id)` | Check if agent qualifies for a job |
 
 ---
 
@@ -345,28 +377,48 @@ Every profile stores its provenance:
 | Contract | Address | Description |
 |----------|---------|-------------|
 | VouchProtocol v4 | `0xB400f98aFAADc9819b4F465c66ed0bf10be01028` (Bradbury) | Core trust synthesis oracle --- web-grounded data, 6 dimensions, economic model |
-| TrustGate | Pending deploy (depends on VouchProtocol reads) | Dimension-gated registration consumer (composability demo) |
+| TrustGate | Pending deploy | Dimension-gated registration consumer |
+| TrustLending | Pending deploy | Trust-scored lending --- borrow limits by tier |
+| AgentMarketplace | Pending deploy | Agent hiring gate --- dimension-gated bidding |
 | Frontend | https://vouch.gudman.xyz | Live web application |
 
 ---
 
+## Transaction Economics
+
+vouch.fun generates **recurring transactions** that scale linearly with adoption.
+
+| Action | Fee | Frequency |
+|--------|-----|-----------|
+| `vouch()` | 1000 wei | Once per new profile |
+| `refresh()` | 1000 wei | Every 90 days (score decay forces refresh) |
+| `stake_vouch()` | 5000+ wei | Per endorsement |
+| `dispute()` | 0 | Per challenge |
+
+**At 10K profiles:** ~49K write transactions/year + 240K reads. At 100K profiles: ~490K writes/year.
+
+The refresh cycle is the engine: profiles expire, agents must pay to maintain their tier. More consumer contracts = more reasons to vouch = more transactions. GenLayer earns up to 20% of fees on every write.
+
 ## Roadmap
 
-### v4 (now) --- Web-Grounded Trust Synthesis
+### v4 (now) --- Web-Grounded Trust Synthesis + Consumer Contracts
 - 6 trust dimensions with graded assessments + confidence levels
 - **Real web data**: validators use `gl.nondet.web.render()` to fetch GitHub API, Etherscan, ENS
-- AI grades grounded in actual evidence, not hallucinated from training data
 - Query fees (1000 wei), stake-to-vouch (5000 wei min), dispute slashing
-- Universal input resolution (GitHub, ENS, wallet, Twitter)
-- Composable view methods: `get_dimension()`, `get_trust_score()`, `get_confidence()`
-- Dispute system with fresh web data re-evaluation
+- 3 consumer contracts: TrustGate, TrustLending, AgentMarketplace
+- Python SDK for one-line integration
+- Vouch Yourself viral flow + social sharing
 
-### v5 --- Mainnet + Enhanced Economics
-- GenLayer mainnet deployment with transaction fee revenue (up to 20% to deployed contracts)
-- Explicit vouch bonds (e.g., 10 GEN locked per evaluation)
+### v5 --- Score Decay + Refresh Loop
+- 90-day profile expiry --- stale profiles drop to UNKNOWN tier
+- `refresh()` required to maintain access to gated services
+- Each refresh = paid transaction (the recurring revenue engine)
+
+### v6 --- Mainnet + Enhanced Economics
+- GenLayer mainnet deployment with transaction fee revenue (up to 20%)
+- Explicit vouch bonds (10 GEN locked per evaluation)
 - Slashing mechanism for frequently-disputed vouches
-- Challenge/dispute economics with disputer rewards
-- TrustGate consumer contract proving cross-contract composability
+- Consumer contract ecosystem growth
 
 ---
 
@@ -375,46 +427,34 @@ Every profile stores its provenance:
 ```
 vouch-fun/
   contracts/
-    vouch_protocol.py          # Core trust oracle: web-grounded 6-dimension AI synthesis (17,610 bytes)
-    trust_gate.py              # Dimension-gated consumer contract (composability demo)
+    vouch_protocol.py          # Core trust oracle: web-grounded 6-dimension AI synthesis
+    trust_gate.py              # Consumer: dimension-gated registration
+    trust_lending.py           # Consumer: borrow limits by trust score/tier
+    agent_marketplace.py       # Consumer: trust-gated agent hiring marketplace
+  sdk/
+    vouch.py                   # Python SDK: VouchClient + quick_check() one-liner
+    README.md                  # SDK documentation and usage examples
   frontend/
-    index.html                 # OG meta tags, favicon, Inter font
     src/
-      lib/genlayer.ts          # GenLayer SDK integration + 6 demo profiles
-      types.ts                 # TrustProfile, DimensionScore, DIMENSIONS, DIMENSION_LABELS
+      lib/genlayer.ts          # GenLayer SDK integration + demo profiles
+      types.ts                 # TrustProfile, DimensionScore types
       pages/
-        Home.tsx               # Agent use cases, 6-dimension grid, trust flow teaser
-        Profile.tsx            # 6-axis radar, confidence badges, trust score, key signals
-        Explore.tsx            # Filterable + sortable profile grid by tier
-        Compare.tsx            # Side-by-side 6-axis radar + dimension comparison table
-        HowItWorks.tsx         # Scroll-animated 5-step consensus explainer
-        Integrate.tsx          # Full v3 API reference, TrustGate examples, use cases
-      components/
-        ConsensusAnimation.tsx # Animated 5-node validator consensus pentagon
-        RadarChart.tsx         # Recharts 6-axis radar (single + comparison mode)
-        GradeCard.tsx          # Dimension card: grade, confidence badge, key signals
-        GradeBar.tsx           # Animated horizontal grade bar
-        ProfileCard.tsx        # Profile card with 6 dimension badges
-        DisputeModal.tsx       # Challenge score submission modal
-        SearchBar.tsx          # Universal input: GitHub, ENS, wallet, or @twitter
-        TrustBadge.tsx         # Colored trust tier badge
-        StatsBar.tsx           # Live profile/query/dispute counts
+        Home.tsx               # Landing: vouch-yourself flow, agent use cases, social proof
+        Profile.tsx            # 6-axis radar, confidence badges, trust score, sharing
+        Explore.tsx            # Filterable profile grid by tier
+        Compare.tsx            # Side-by-side 6-axis radar comparison
+        HowItWorks.tsx         # Scroll-animated consensus explainer
+        Integrate.tsx          # API reference, consumer contract examples
+      components/              # RadarChart, GradeCard, SearchBar, ConsensusAnimation, etc.
   scripts/
-    deploy_v3.mjs              # VouchProtocol v3 deployment + polling
-    deploy_trustgate.mjs       # TrustGate deployment with dimension config
-    test_trustgate.mjs         # Cross-contract registration test
+    deploy_v3.mjs              # VouchProtocol deployment
+    deploy_trustgate.mjs       # TrustGate deployment
+    agent_trust_demo.py        # Agent-to-agent trust verification demo
     test_vouch_v3.mjs          # Contract integration tests
-  tests/
-    test_v3_helpers.py         # 62 unit tests: type detection, sanitization, parsing, grades
-    test_v3_schema.py          # 132 schema validation tests for all 6 demo profiles
-    test_validators.py         # Validator input validation tests
-    test_prompts.py            # Prompt construction tests
-    test_handle_index.py       # Handle-to-address resolution tests
-    fixtures/
-      demo_profiles.json       # 6 demo profiles matching frontend fallback data
+  tests/                       # 240+ tests: helpers, schema, validators, prompts, handle index
   docs/
     plans/                     # Design documents
-    pitch.md                   # Hackathon submission pitch one-pager
+    pitch.md                   # Hackathon submission pitch
 ```
 
 ---
