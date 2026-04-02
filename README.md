@@ -8,6 +8,19 @@ Web-grounded trust synthesis via decentralized AI consensus. 5 independent valid
 
 ---
 
+## Screenshots
+
+| Home | Profile | Gates |
+|------|---------|-------|
+| ![Home](docs/screenshots/home.png) | ![Profile](docs/screenshots/profile.png) | ![Gates](docs/screenshots/gates.png) |
+
+> **To add screenshots:** take 3 browser screenshots and save them to `docs/screenshots/`:
+> - `home.png` — the landing page (hero section + stats bar)
+> - `profile.png` — a profile page showing samczsun with all 6 trust dimensions and the radar chart
+> - `gates.png` — the consumer contracts / trust gates section showing the 4 gated examples
+
+---
+
 ## Why vouch.fun?
 
 In the agentic economy, autonomous agents hire each other, delegate tasks, and transact on behalf of users. Before any interaction, an agent needs to answer: **"Can I trust this entity?"**
