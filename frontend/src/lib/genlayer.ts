@@ -1,14 +1,22 @@
 import { createClient, createAccount } from "genlayer-js";
-import { testnetBradbury, studionet } from "genlayer-js/chains";
+import { testnetBradbury, localnet } from "genlayer-js/chains";
 import type { TrustProfile, DimensionScore } from "../types";
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "";
 const DEMO_KEY = import.meta.env.VITE_DEMO_PRIVATE_KEY || "";
 const USE_STUDIO = import.meta.env.VITE_USE_STUDIO === "true";
+const STUDIO_RPC = import.meta.env.VITE_STUDIO_RPC_URL || "";
 const account = DEMO_KEY ? createAccount(DEMO_KEY) : createAccount();
 
+// If custom Studio RPC URL is set, use localnet chain (61127) with overridden RPC
+const chain = USE_STUDIO
+  ? STUDIO_RPC
+    ? { ...localnet, rpcUrls: { default: { http: [STUDIO_RPC] } } }
+    : localnet
+  : testnetBradbury;
+
 export const client = createClient({
-  chain: USE_STUDIO ? studionet : testnetBradbury,
+  chain,
   account,
 });
 
@@ -135,15 +143,16 @@ export async function readTrustTier(address: string): Promise<string> {
 }
 
 // Query fee in wei — must match contract QUERY_FEE constant
-export const QUERY_FEE = 1000n;
-export const MIN_STAKE = 5000n;
+export const QUERY_FEE = 0n;
+export const MIN_STAKE = 0n;
 
 export async function generateProfile(handle: string): Promise<any> {
   const txHash = await client.writeContract({
     address: contractAddress,
     functionName: "vouch",
     args: [handle],
-    value: QUERY_FEE,
+    value: 0n,
+    leaderOnly: true,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
 }
@@ -153,17 +162,19 @@ export async function refreshProfile(handle: string): Promise<any> {
     address: contractAddress,
     functionName: "refresh",
     args: [handle],
-    value: QUERY_FEE,
+    value: 0n,
+    leaderOnly: true,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
 }
 
-export async function stakeVouch(identifier: string, dimension: string, grade: string, amount: bigint): Promise<any> {
+export async function stakeVouch(identifier: string, dimension: string, grade: string, _amount?: bigint): Promise<any> {
   const txHash = await client.writeContract({
     address: contractAddress,
     functionName: "stake_vouch",
     args: [identifier, dimension, grade],
-    value: amount >= MIN_STAKE ? amount : MIN_STAKE,
+    value: 0n,
+    leaderOnly: true,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
 }
@@ -229,6 +240,7 @@ export async function disputeProfile(handle: string, reason: string): Promise<an
     functionName: "dispute",
     args: [handle, reason],
     value: 0n,
+    leaderOnly: true,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
 }
@@ -239,6 +251,7 @@ export async function compareProfiles(handleA: string, handleB: string): Promise
     functionName: "compare",
     args: [handleA, handleB],
     value: 0n,
+    leaderOnly: true,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
 }

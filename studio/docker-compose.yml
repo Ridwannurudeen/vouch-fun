@@ -1,0 +1,117 @@
+services:
+  jsonrpc:
+    image: yeagerai/simulator-jsonrpc:v0.114.4
+    environment:
+      - PYTHONUNBUFFERED=1
+      - WEBDRIVERHOST=webdriver
+      - WEBDRIVERPORT=4444
+      - REDIS_URL=redis://redis:6379/0
+      - GENVMROOT=/genvm
+      - LOG_LEVEL=info
+      - DBUSER=postgres
+      - DBPASSWORD=postgres
+      - DBHOST=postgres
+      - DBPORT=5432
+      - DBNAME=genlayer_state
+    ports:
+      - "127.0.0.1:4000:4000"
+    env_file:
+      - ./.env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s
+    depends_on:
+      database-migration:
+        condition: service_completed_successfully
+      webdriver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - genvm_cache:/genvm-cache
+    restart: always
+
+  consensus-worker:
+    image: yeagerai/simulator-consensus-worker:v0.114.4
+    environment:
+      - DBUSER=postgres
+      - DBPASSWORD=postgres
+      - DBHOST=postgres
+      - DBNAME=genlayer_state
+      - WORKER_PORT=4001
+      - WORKER_POLL_INTERVAL=5
+      - TRANSACTION_TIMEOUT_MINUTES=30
+      - LOG_LEVEL=info
+      - WEBDRIVERHOST=webdriver
+      - WEBDRIVERPORT=4444
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - ./.env
+    depends_on:
+      database-migration:
+        condition: service_completed_successfully
+      webdriver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      jsonrpc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 180s
+    volumes:
+      - genvm_cache:/genvm-cache
+    restart: unless-stopped
+
+  webdriver:
+    image: yeagerai/genlayer-genvm-webdriver:0.0.10
+    shm_size: 2gb
+    environment:
+      - PORT=4444
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: always
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=genlayer_state
+    healthcheck:
+      test: pg_isready -U postgres -d genlayer_state
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  database-migration:
+    image: yeagerai/simulator-database-migration:v0.114.4
+    environment:
+      - DBUSER=postgres
+      - DBPASSWORD=postgres
+      - DBHOST=postgres
+      - DBPORT=5432
+      - DBNAME=genlayer_state
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  genvm_cache:
