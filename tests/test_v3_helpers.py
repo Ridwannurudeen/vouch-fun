@@ -69,7 +69,7 @@ _setup_genlayer_stub()
 
 # Now safe to import the contract helpers
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent / "contracts"))
-from vouch_protocol import _dt, _san, _pa, _dim, _DM
+from vouch_protocol import _dt, _san, _pa, _dim, _DM, _bare
 
 
 # ===== Grade value mapping (equivalent to _grade_val) =====
@@ -145,7 +145,7 @@ class TestDt:
 # ===========================================================================
 
 class TestSan:
-    """_san(s) sanitizes identifiers: strip, lower, remove leading @."""
+    """_san(s) sanitizes identifiers: strip, lower. Preserves @ prefix for Twitter."""
 
     def test_basic_lowercase(self):
         assert _san("VButerin") == "vbuterin"
@@ -154,14 +154,14 @@ class TestSan:
         assert _san("  vbuterin  ") == "vbuterin"
 
     def test_remove_at_prefix(self):
-        assert _san("@vitalik") == "vitalik"
+        assert _san("@vitalik") == "@vitalik"
 
     def test_combined_strip_lower_at(self):
-        assert _san("  @VitaLIK  ") == "vitalik"
+        assert _san("  @VitaLIK  ") == "@vitalik"
 
     def test_multiple_at_signs(self):
-        """lstrip('@') removes ALL leading @ chars."""
-        assert _san("@@user") == "user"
+        """@ signs are preserved by _san."""
+        assert _san("@@user") == "@@user"
 
     def test_empty_string_raises(self):
         with pytest.raises(Exception, match="Invalid"):
@@ -408,7 +408,7 @@ class TestHelperIntegration:
         idt = _dt(raw)
         clean = _san(raw)
         assert idt == "twitter"
-        assert clean == "vitalik"
+        assert clean == "@vitalik"
 
     def test_detect_then_sanitize_ens(self):
         # _dt only checks .endswith(".eth") (case-sensitive after strip)
@@ -419,11 +419,10 @@ class TestHelperIntegration:
         assert clean == "vitalik.eth"
 
     def test_detect_ens_case_sensitive(self):
-        """_dt does NOT lowercase before checking .eth — uppercase .ETH is 'github'."""
+        """_dt now lowercases before checking .eth — uppercase .ETH is 'ens'."""
         raw = "  Vitalik.ETH  "
         idt = _dt(raw)
-        # After strip: "Vitalik.ETH" does not endswith(".eth") -> falls to github
-        assert idt == "github"
+        assert idt == "ens"
 
     def test_detect_then_sanitize_wallet(self):
         raw = "0xABCDEF1234567890abcdef1234567890ABCDEF12"
@@ -449,3 +448,53 @@ class TestHelperIntegration:
         for d in DIMENSIONS:
             assert parsed[d]["grade"] == "B"
             assert parsed[d]["key_signals"] == [f"sig_{d}"]
+
+
+class TestBare:
+    """_bare(s) strips leading @ for URL construction."""
+
+    def test_strips_at(self):
+        assert _bare("@vitalik") == "vitalik"
+
+    def test_no_at(self):
+        assert _bare("vbuterin") == "vbuterin"
+
+    def test_multiple_at(self):
+        assert _bare("@@user") == "user"
+
+    def test_empty(self):
+        assert _bare("") == ""
+
+
+class TestNewBehavior:
+    """Tests for updated _san, _dt, and _bare behavior."""
+
+    def test_san_preserves_at_for_twitter(self):
+        assert _san("@elonmusk") == "@elonmusk"
+
+    def test_san_at_only_still_raises(self):
+        with pytest.raises(Exception, match="Invalid"):
+            _san("@")
+
+    def test_dt_ens_case_insensitive(self):
+        assert _dt("vitalik.ETH") == "ens"
+        assert _dt("Vitalik.Eth") == "ens"
+        assert _dt("SUB.NAME.ETH") == "ens"
+
+    def test_dt_twitter_roundtrip_with_san(self):
+        """Twitter handle survives _dt -> _san -> _bare roundtrip."""
+        raw = "@CryptoUser"
+        idt = _dt(raw)
+        clean = _san(raw)
+        bare = _bare(clean)
+        assert idt == "twitter"
+        assert clean == "@cryptouser"
+        assert bare == "cryptouser"
+
+    def test_san_wallet_unchanged(self):
+        addr = "0xABCDEF1234567890abcdef1234567890ABCDEF12"
+        assert _san(addr) == addr.lower()
+
+    def test_bare_wallet_unchanged(self):
+        addr = "0xabcdef1234567890abcdef1234567890abcdef12"
+        assert _bare(addr) == addr

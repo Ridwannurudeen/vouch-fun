@@ -506,6 +506,8 @@ const DIM_BENTO: { key: DimensionKey; label: string; desc: string; icon: string;
    ═══════════════════════════════════════════════════ */
 function VouchYourself() {
   const [handle, setHandle] = useState("");
+  const [walletAddr, setWalletAddr] = useState("");
+  const [showWallet, setShowWallet] = useState(false);
   const [phase, setPhase] = useState<"input" | "generating" | "done">("input");
   const [profile, setProfile] = useState<TrustProfile | null>(null);
   const [error, setError] = useState("");
@@ -519,14 +521,14 @@ function VouchYourself() {
     trimmed = trimmed.replace(/^https?:\/\/(www\.)?github\.com\//i, "");
     trimmed = trimmed.replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, "");
     trimmed = trimmed.replace(/\/$/, ""); // trailing slash
-    trimmed = trimmed.replace(/^@/, "");
     if (!trimmed) return;
     setPhase("generating");
     setError("");
     setSlow(false);
     const slowTimer = setTimeout(() => setSlow(true), 60000);
     try {
-      await generateProfile(trimmed);
+      const wallet = walletAddr.trim();
+      await generateProfile(trimmed, wallet);
       const p = await readProfileByHandle(trimmed);
       if (p && p.overall) {
         setProfile(p);
@@ -650,7 +652,7 @@ function VouchYourself() {
             Vouch <span className="gradient-text">Yourself</span>
           </h2>
           <p className="text-sm text-white/25 max-w-md mx-auto mb-8">
-            5 AI validators will independently evaluate your on-chain, code, and social presence — then reach consensus on your trust profile.
+            5 AI validators synthesize data from GitHub, npm, Farcaster, Lens, Etherscan, Tally, and DefiLlama — then reach consensus on your trust profile.
           </p>
 
           {phase === "generating" ? (
@@ -675,26 +677,41 @@ function VouchYourself() {
               </div>
             </div>
           ) : (
-            <form onSubmit={handleVouch} className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto">
-              <div className="relative flex-1">
-                <input
-                  value={handle}
-                  onChange={(e) => setHandle(e.target.value)}
-                  placeholder="Your GitHub handle"
-                  className="w-full bg-transparent text-white placeholder-white/20 pl-5 pr-4 py-4 text-base font-mono outline-none glass rounded-xl border border-white/[.06] focus:border-indigo-500/40 transition-colors"
-                />
+            <form onSubmit={handleVouch} className="flex flex-col gap-3 max-w-lg mx-auto">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <input
+                    value={handle}
+                    onChange={(e) => setHandle(e.target.value)}
+                    placeholder="Your GitHub handle"
+                    className="w-full bg-transparent text-white placeholder-white/20 pl-5 pr-4 py-4 text-base font-mono outline-none glass rounded-xl border border-white/[.06] focus:border-indigo-500/40 transition-colors"
+                  />
+                </div>
+                <motion.button
+                  type="submit"
+                  disabled={!handle.trim()}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="px-8 py-4 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl font-bold text-sm
+                             hover:from-indigo-400 hover:to-violet-400 disabled:from-gray-700 disabled:to-gray-700 disabled:text-gray-500
+                             transition-all shadow-lg shadow-indigo-500/20 disabled:shadow-none"
+                >
+                  Vouch Me
+                </motion.button>
               </div>
-              <motion.button
-                type="submit"
-                disabled={!handle.trim()}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                className="px-8 py-4 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl font-bold text-sm
-                           hover:from-indigo-400 hover:to-violet-400 disabled:from-gray-700 disabled:to-gray-700 disabled:text-gray-500
-                           transition-all shadow-lg shadow-indigo-500/20 disabled:shadow-none"
-              >
-                Vouch Me
-              </motion.button>
+              {!showWallet ? (
+                <button type="button" onClick={() => setShowWallet(true)}
+                  className="text-[11px] text-indigo-400/50 hover:text-indigo-400/80 font-mono transition-colors">
+                  + Add wallet address for on-chain / DeFi scoring
+                </button>
+              ) : (
+                <input
+                  value={walletAddr}
+                  onChange={(e) => setWalletAddr(e.target.value)}
+                  placeholder="0x... ETH wallet (optional — enables on-chain & DeFi scoring)"
+                  className="w-full bg-transparent text-white placeholder-white/15 pl-5 pr-4 py-3 text-sm font-mono outline-none glass rounded-xl border border-white/[.04] focus:border-indigo-500/30 transition-colors"
+                />
+              )}
             </form>
           )}
 

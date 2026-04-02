@@ -127,7 +127,7 @@ export async function readProfile(address: string): Promise<TrustProfile | null>
 }
 
 export async function readProfileByHandle(handle: string): Promise<TrustProfile | null> {
-  const key = handle.trim().toLowerCase().replace(/^@/, "");
+  const key = handle.trim().toLowerCase();
   try {
     const result = await client.readContract({
       address: contractAddress,
@@ -162,21 +162,23 @@ export async function readTrustTier(address: string): Promise<string> {
 export const QUERY_FEE = 0n;
 export const MIN_STAKE = 0n;
 
-export async function generateProfile(handle: string): Promise<any> {
+export async function generateProfile(handle: string, walletAddress: string = ""): Promise<any> {
+  const args: string[] = walletAddress ? [handle, walletAddress] : [handle];
   const txHash = await client.writeContract({
     address: contractAddress,
     functionName: "vouch",
-    args: [handle],
+    args,
     value: 0n,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
 }
 
-export async function refreshProfile(handle: string): Promise<any> {
+export async function refreshProfile(handle: string, walletAddress: string = ""): Promise<any> {
+  const args: string[] = walletAddress ? [handle, walletAddress] : [handle];
   const txHash = await client.writeContract({
     address: contractAddress,
     functionName: "refresh",
-    args: [handle],
+    args,
     value: 0n,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });

@@ -21,13 +21,17 @@ _KNOWN = {
 def _dt(s):
     s = s.strip()
     if re.match(r'^0x[a-fA-F0-9]{40}$',s): return "wallet"
-    if s.endswith(".eth"): return "ens"
+    if s.lower().endswith(".eth"): return "ens"
     return "twitter" if s.startswith("@") else "github"
 
 def _san(s):
-    c = s.strip().lower().lstrip("@")
-    if not c or len(c)>64: raise Exception("Invalid")
+    c = s.strip().lower()
+    if not c or c == "@" or len(c)>64: raise Exception("Invalid")
     return c
+
+def _bare(s):
+    """Strip leading @ for URL construction."""
+    return s.lstrip("@")
 
 def _pa(raw):
     c = raw.strip()
@@ -154,10 +158,34 @@ class VouchProtocol(gl.Contract):
         return fj
 
     # --- web-grounded evaluation ---
-    def _eval(self, ident, idt, prompt_extra=""):
+    def _eval(self, ident, idt, prompt_extra="", wallet_hint=""):
+        # --- Data source URLs ---
+        # GitHub API (code, identity)
         gh_api = f"https://api.github.com/users/{ident}" if idt == "github" else ""
         gh_repos = f"https://api.github.com/users/{ident}/repos?sort=stars&per_page=5" if idt == "github" else ""
-        es_url = f"https://etherscan.io/address/{ident}" if idt == "wallet" else ""
+        # npm registry (code — package publishing signal)
+        npm_url = f"https://registry.npmjs.org/-/v1/search?text=maintainer:{ident}&size=5" if idt == "github" else ""
+        # Twitter/X (social)
+        x_url = f"https://x.com/{_bare(ident)}" if idt == "twitter" else ""
+        nitter_url = f"https://nitter.net/{_bare(ident)}" if idt == "twitter" else ""
+        # Etherscan (on-chain, DeFi)
+        es_addr = ident if idt == "wallet" else wallet_hint
+        es_url = f"https://etherscan.io/address/{es_addr}" if es_addr else ""
+        # Farcaster via Warpcast (social)
+        warpcast_url = f"https://warpcast.com/{_bare(ident)}" if idt in ("github", "twitter") else ""
+        # Lens via Hey.xyz (social, identity)
+        lens_url = f"https://hey.xyz/u/{_bare(ident)}" if idt in ("github", "twitter") else ""
+        # Tally.xyz (governance — needs wallet)
+        tally_url = f"https://www.tally.xyz/voter/{es_addr}" if es_addr else ""
+        # DeBank (wallet portfolio + DeFi)
+        debank_url = f"https://debank.com/profile/{ident}" if idt == "wallet" else ""
+        # Snapshot (governance — needs wallet)
+        snapshot_url = f"https://snapshot.org/#/profile/{es_addr}" if es_addr else ""
+        # DefiLlama (DeFi — check if handle matches a protocol)
+        llama_url = f"https://api.llama.fi/protocol/{ident}" if idt == "github" else ""
+        # ENS resolution (identity — resolve name to address for chained lookups)
+        ensdata_url = f"https://api.ensdata.net/{ident}" if idt == "ens" else ""
+
         the_ident = ident
         the_idt = idt
         # Inject known-figure context
@@ -165,31 +193,150 @@ class VouchProtocol(gl.Contract):
         extra = (known_ctx + "\n" + prompt_extra) if known_ctx else prompt_extra
 
         _evidence_found = [False]  # mutable to allow nonlocal update from _run
+        _sources_hit = []  # track which sources returned data
 
         def _run():
             evidence = []
+            # 1. GitHub profile + repos
             if gh_api:
                 try:
                     data = gl.nondet.web.render(gh_api, mode="text")
-                    evidence.append(f"GITHUB: {data[:1500]}")
+                    evidence.append(f"GITHUB_PROFILE: {data[:1500]}")
+                    _sources_hit.append("github_api")
                 except Exception: pass
             if gh_repos:
                 try:
                     data = gl.nondet.web.render(gh_repos, mode="text")
-                    evidence.append(f"REPOS: {data[:1000]}")
+                    evidence.append(f"GITHUB_REPOS: {data[:1000]}")
                 except Exception: pass
+            # 2. npm registry — package publishing
+            if npm_url:
+                try:
+                    data = gl.nondet.web.render(npm_url, mode="text")
+                    evidence.append(f"NPM_PACKAGES: {data[:800]}")
+                    _sources_hit.append("npm_registry")
+                except Exception: pass
+            # 3. Etherscan — on-chain activity
             if es_url:
                 try:
                     data = gl.nondet.web.render(es_url, mode="text")
                     evidence.append(f"ETHERSCAN: {data[:1500]}")
+                    _sources_hit.append("etherscan")
                 except Exception: pass
+            # 4. Farcaster via Warpcast — social presence
+            if warpcast_url:
+                try:
+                    data = gl.nondet.web.render(warpcast_url, mode="text")
+                    evidence.append(f"FARCASTER: {data[:800]}")
+                    _sources_hit.append("farcaster")
+                except Exception: pass
+            # 5. Lens via Hey.xyz — social + identity
+            if lens_url:
+                try:
+                    data = gl.nondet.web.render(lens_url, mode="text")
+                    evidence.append(f"LENS: {data[:800]}")
+                    _sources_hit.append("lens")
+                except Exception: pass
+            # 6. Tally.xyz — governance votes
+            if tally_url:
+                try:
+                    data = gl.nondet.web.render(tally_url, mode="text")
+                    evidence.append(f"TALLY_GOVERNANCE: {data[:800]}")
+                    _sources_hit.append("tally")
+                except Exception: pass
+            # 7. DefiLlama — protocol TVL (if handle matches a protocol)
+            if llama_url:
+                try:
+                    data = gl.nondet.web.render(llama_url, mode="text")
+                    if "Not Found" not in data[:100] and len(data) > 50:
+                        evidence.append(f"DEFILLAMA: {data[:800]}")
+                        _sources_hit.append("defillama")
+                except Exception: pass
+            # 8. Twitter/X profile
+            if x_url:
+                try:
+                    data = gl.nondet.web.render(x_url, mode="text")
+                    evidence.append(f"TWITTER: {data[:1500]}")
+                    _sources_hit.append("twitter")
+                except Exception: pass
+            if nitter_url:
+                try:
+                    data = gl.nondet.web.render(nitter_url, mode="text")
+                    evidence.append(f"NITTER: {data[:1500]}")
+                    _sources_hit.append("nitter")
+                except Exception: pass
+            # 9. DeBank — portfolio + DeFi
+            if debank_url:
+                try:
+                    data = gl.nondet.web.render(debank_url, mode="text")
+                    evidence.append(f"DEBANK: {data[:1500]}")
+                    _sources_hit.append("debank")
+                except Exception: pass
+            # 10. Snapshot — governance
+            if snapshot_url:
+                try:
+                    data = gl.nondet.web.render(snapshot_url, mode="text")
+                    evidence.append(f"SNAPSHOT: {data[:800]}")
+                    _sources_hit.append("snapshot")
+                except Exception: pass
+            # 11. ENS resolution + chained lookups
+            if ensdata_url:
+                try:
+                    data = gl.nondet.web.render(ensdata_url, mode="text")
+                    evidence.append(f"ENS_DATA: {data[:1500]}")
+                    _sources_hit.append("ensdata")
+                    # Try to extract resolved address for chained lookups
+                    try:
+                        ens_info = json.loads(data)
+                        resolved_addr = ens_info.get("address", "")
+                        if resolved_addr and resolved_addr.startswith("0x"):
+                            # Chain to Etherscan
+                            try:
+                                es_data = gl.nondet.web.render(f"https://etherscan.io/address/{resolved_addr}", mode="text")
+                                evidence.append(f"ETHERSCAN: {es_data[:1500]}")
+                                _sources_hit.append("etherscan")
+                            except Exception: pass
+                            # Chain to DeBank
+                            try:
+                                db_data = gl.nondet.web.render(f"https://debank.com/profile/{resolved_addr}", mode="text")
+                                evidence.append(f"DEBANK: {db_data[:1500]}")
+                                _sources_hit.append("debank")
+                            except Exception: pass
+                            # Chain to Tally
+                            try:
+                                tally_data = gl.nondet.web.render(f"https://www.tally.xyz/voter/{resolved_addr}", mode="text")
+                                evidence.append(f"TALLY_GOVERNANCE: {tally_data[:800]}")
+                                _sources_hit.append("tally")
+                            except Exception: pass
+                            # Chain to Snapshot
+                            try:
+                                snap_data = gl.nondet.web.render(f"https://snapshot.org/#/profile/{resolved_addr}", mode="text")
+                                evidence.append(f"SNAPSHOT: {snap_data[:800]}")
+                                _sources_hit.append("snapshot")
+                            except Exception: pass
+                    except Exception: pass
+                except Exception: pass
+
             ev = " | ".join(evidence) if evidence else "No data."
             _evidence_found[0] = bool(ev.strip() and ev != "No data.")
+            # Type-specific grading guidance
+            type_guidance = {
+                "github": "PRIMARY dimension: code. Evaluate repos, stars, contributions, packages. Social/onchain are secondary signals.",
+                "twitter": "PRIMARY dimension: social. Evaluate followers, engagement, influence, content quality. Code is secondary (likely F unless dev). Onchain is secondary.",
+                "wallet": "PRIMARY dimension: onchain. Evaluate transaction history, DeFi activity, contract deployments, portfolio. Code is likely F unless contract deployer.",
+                "ens": "PRIMARY dimension: identity. ENS ownership signals identity commitment. Chain to resolved address for onchain/DeFi/governance data.",
+            }
+            tg = type_guidance.get(the_idt, "")
+            sources_list = ", ".join(_sources_hit) if _sources_hit else "No sources returned data"
             prompt = ("You are a trust evaluation oracle. Rate " + the_ident + " (" + the_idt + ") on 6 trust dimensions.\n"
-                      "Evidence: " + ev + "\n" + extra + "\n"
-                      "GRADING: A=exceptional top 5pct (protocol creator, 10k+ stars). B=strong active contributor (1k+ stars, regular commits). C=moderate activity. D=minimal. F=no evidence.\n"
+                      "IDENTIFIER TYPE: " + the_idt + ". " + tg + "\n"
+                      "EVIDENCE FROM MULTIPLE SOURCES:\n" + ev + "\n" + extra + "\n"
+                      "DATA SOURCES USED: " + sources_list + ".\n"
+                      "Use ALL available evidence to grade each dimension. Cross-reference signals across sources.\n"
+                      "GRADING: A=exceptional top 5pct (protocol creator, 10k+ stars, major packages). B=strong active contributor (1k+ stars, published packages, regular commits). C=moderate activity. D=minimal. F=no evidence.\n"
                       "Grade generously for well-known figures. Famous security researchers and prolific OSS devs deserve A in code. Do not underweight high star counts or famous repos.\n"
-                      "For dimensions without direct evidence (onchain/defi/governance for GitHub-only user), use F.\n"
+                      "For social: use Farcaster followers, Lens activity, Twitter/X followers and engagement. For governance: use Tally votes, Snapshot votes, DAO proposals. For DeFi: use Etherscan DeFi interactions, DeBank portfolio, DefiLlama protocol data.\n"
+                      "Only grade F if NO evidence exists for that dimension across ANY source.\n"
                       "Return JSON with keys: code, onchain, social, governance, defi, identity, score, tier.\n"
                       "Each dimension is a letter grade A/B/C/D/F. score is 0-100. tier is TRUSTED(80+)/MODERATE(50-79)/LOW(25-49)/UNKNOWN(0-24).\n"
                       "Return ONLY the JSON object.")
@@ -264,17 +411,16 @@ class VouchProtocol(gl.Contract):
         profile["overall"] = {"trust_tier": tier, "trust_score": score, "summary": f"Trust profile for {the_ident} ({mode})", "consensus_mode": mode}
 
         src = ["ai_consensus" if consensus_ok else "ai_leader"]
-        if gh_api: src.append("github_api")
-        if es_url: src.append("etherscan")
+        src.extend(_sources_hit)
         return profile, src
 
-    def _do_eval(self, ident, idt, caller, extra=""):
-        profile, src = self._eval(ident, idt, extra)
+    def _do_eval(self, ident, idt, caller, extra="", wallet_hint=""):
+        profile, src = self._eval(ident, idt, extra, wallet_hint=wallet_hint)
         return self._store(caller, ident, idt, profile, src)
 
     # --- public write methods ---
     @gl.public.write
-    def vouch(self, identifier: str) -> str:
+    def vouch(self, identifier: str, wallet_address: str = "") -> str:
         if QUERY_FEE > 0 and gl.message.value < QUERY_FEE:
             raise Exception(f"Query fee: send >= {QUERY_FEE} wei")
         idt = _dt(identifier)
@@ -286,10 +432,12 @@ class VouchProtocol(gl.Contract):
         if cached:
             self.query_count += 1
             return cached
-        return self._do_eval(clean, idt, caller)
+        # Pass wallet_hint so Etherscan is also fetched for GitHub users
+        wallet = wallet_address.strip() if wallet_address else ""
+        return self._do_eval(clean, idt, caller, wallet_hint=wallet)
 
     @gl.public.write
-    def refresh(self, identifier: str) -> str:
+    def refresh(self, identifier: str, wallet_address: str = "") -> str:
         if QUERY_FEE > 0 and gl.message.value < QUERY_FEE:
             raise Exception(f"Query fee: send >= {QUERY_FEE} wei")
         idt = _dt(identifier)
@@ -302,7 +450,8 @@ class VouchProtocol(gl.Contract):
             del p[clean]
             self._sp(p)
             self.profile_count -= 1
-        return self._do_eval(clean, idt, caller)
+        wallet = wallet_address.strip() if wallet_address else ""
+        return self._do_eval(clean, idt, caller, wallet_hint=wallet)
 
     @gl.public.write
     def stake_vouch(self, identifier: str, dimension: str, grade: str) -> str:
@@ -367,20 +516,36 @@ class VouchProtocol(gl.Contract):
     def compare(self, id_a: str, id_b: str) -> str:
         a, b = _san(id_a), _san(id_b)
         idt_a, idt_b = _dt(id_a), _dt(id_b)
-        gh_a = f"https://api.github.com/users/{a}" if idt_a == "github" else ""
-        gh_b = f"https://api.github.com/users/{b}" if idt_b == "github" else ""
+
+        def _urls_for(ident, idt):
+            """Build data source URLs based on identifier type."""
+            bare = _bare(ident)
+            urls = []
+            if idt == "github":
+                urls.append(("GITHUB", f"https://api.github.com/users/{bare}"))
+            elif idt == "twitter":
+                urls.append(("TWITTER", f"https://x.com/{bare}"))
+            elif idt == "wallet":
+                urls.append(("ETHERSCAN", f"https://etherscan.io/address/{ident}"))
+                urls.append(("DEBANK", f"https://debank.com/profile/{ident}"))
+            elif idt == "ens":
+                urls.append(("ENS", f"https://api.ensdata.net/{ident}"))
+            return urls
+
+        urls_a = _urls_for(a, idt_a)
+        urls_b = _urls_for(b, idt_b)
 
         def _run():
             evidence = []
-            if gh_a:
+            for label, url in urls_a:
                 try:
-                    data = gl.nondet.web.render(gh_a, mode="text")
-                    evidence.append(f"GITHUB({a}): {data[:1200]}")
+                    data = gl.nondet.web.render(url, mode="text")
+                    evidence.append(f"{label}({a}): {data[:1200]}")
                 except Exception: pass
-            if gh_b:
+            for label, url in urls_b:
                 try:
-                    data = gl.nondet.web.render(gh_b, mode="text")
-                    evidence.append(f"GITHUB({b}): {data[:1200]}")
+                    data = gl.nondet.web.render(url, mode="text")
+                    evidence.append(f"{label}({b}): {data[:1200]}")
                 except Exception: pass
             ev = " | ".join(evidence) if evidence else "No live data available."
             pr = (f"Compare '{a}' and '{b}' across 6 trust dims ({_DM}). "

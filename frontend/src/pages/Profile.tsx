@@ -48,9 +48,12 @@ function cleanHandle(raw: string | undefined): string | undefined {
   if (!raw) return raw;
   let h = decodeURIComponent(raw).trim();
   h = h.replace(/^https?:\/\/(www\.)?github\.com\//i, "");
-  h = h.replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, "");
+  // Convert Twitter/X URLs to @handle format
+  const twitterMatch = h.match(/^https?:\/\/(www\.)?(twitter|x)\.com\/([^/]+)\/?$/i);
+  if (twitterMatch) {
+    h = "@" + twitterMatch[3];
+  }
   h = h.replace(/\/$/, "");
-  h = h.replace(/^@/, "");
   return h || raw;
 }
 
@@ -242,14 +245,43 @@ export default function Profile() {
                 </div>
               )}
 
-              <div className="text-xs text-gray-600 mt-3 font-mono">
-                Sources: {(profile.sources || profile.sources_scraped || []).join(", ")}
-                {(profile.sources || profile.sources_scraped || []).includes("seed") && (
-                  <span className="ml-2 px-2 py-0.5 bg-amber-500/15 text-amber-400 rounded text-xs">
-                    Seeded Profile
-                  </span>
-                )}
-              </div>
+              {/* Data Sources */}
+              {(() => {
+                const srcs = profile.sources || profile.sources_scraped || [];
+                if (srcs.length === 0) return null;
+                const SOURCE_DISPLAY: Record<string, { label: string; color: string }> = {
+                  github_api: { label: "GitHub", color: "bg-gray-700 text-gray-200" },
+                  npm_registry: { label: "npm", color: "bg-red-500/20 text-red-300" },
+                  etherscan: { label: "Etherscan", color: "bg-blue-500/20 text-blue-300" },
+                  farcaster: { label: "Farcaster", color: "bg-purple-500/20 text-purple-300" },
+                  lens: { label: "Lens", color: "bg-green-500/20 text-green-300" },
+                  tally: { label: "Tally", color: "bg-indigo-500/20 text-indigo-300" },
+                  defillama: { label: "DefiLlama", color: "bg-sky-500/20 text-sky-300" },
+                  twitter: { label: "Twitter/X", color: "bg-sky-500/20 text-sky-300" },
+                  nitter: { label: "Nitter", color: "bg-sky-400/20 text-sky-200" },
+                  debank: { label: "DeBank", color: "bg-orange-500/20 text-orange-300" },
+                  snapshot: { label: "Snapshot", color: "bg-amber-500/20 text-amber-300" },
+                  ensdata: { label: "ENS", color: "bg-indigo-400/20 text-indigo-200" },
+                  ai_consensus: { label: "AI Consensus", color: "bg-accent-dim text-accent" },
+                  ai_leader: { label: "AI Leader", color: "bg-accent-dim text-accent" },
+                  seed: { label: "Seed Data", color: "bg-amber-500/15 text-amber-400" },
+                };
+                return (
+                  <div className="mt-3">
+                    <span className="text-[10px] uppercase tracking-widest text-gray-600 font-mono block mb-1.5">Data Sources</span>
+                    <div className="flex flex-wrap gap-1.5 justify-center">
+                      {srcs.map((s) => {
+                        const info = SOURCE_DISPLAY[s] || { label: s, color: "bg-white/5 text-gray-400" };
+                        return (
+                          <span key={s} className={`text-[11px] px-2.5 py-0.5 rounded-full font-medium ${info.color}`}>
+                            {info.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
               {profile.vouched_by && (
                 <div className="text-xs text-gray-600 mt-1 font-mono">
                   Vouched by: {profile.vouched_by}
