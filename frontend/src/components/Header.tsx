@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-
 export default function Header() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
@@ -18,6 +17,7 @@ export default function Header() {
         <Link to="/" className="flex items-center gap-2">
           <span className="text-xl font-bold text-white">vouch.fun</span>
           <span className="text-xs text-gray-500 font-mono mt-1">Trust Synthesis</span>
+          <span className="text-[10px] bg-accent/20 text-accent px-1.5 py-0.5 rounded-full font-mono mt-1">GenLayer</span>
         </Link>
 
         {/* Desktop nav */}

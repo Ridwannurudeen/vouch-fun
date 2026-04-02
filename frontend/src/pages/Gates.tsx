@@ -11,6 +11,7 @@ import {
   getDecayInfo,
   getProfileAge,
   contractAddress,
+  chainName,
 } from "../lib/genlayer";
 
 const PRESET_GATES = [
@@ -358,6 +359,7 @@ export default function Gates() {
         <div className="glass rounded-xl p-5 border border-accent/20 text-center">
           <div className="text-xs text-gray-500 mb-1">Contract Address</div>
           <code className="text-sm font-mono text-accent break-all">{contractAddress}</code>
+          <div className="text-xs text-green-400 mt-1 font-mono">{chainName}</div>
           <div className="mt-3 flex justify-center gap-3">
             <Link to="/integrate" className="text-xs text-gray-400 hover:text-white transition-colors">API Docs</Link>
             <Link to="/explore" className="text-xs text-gray-400 hover:text-white transition-colors">Explore Profiles</Link>

@@ -22,6 +22,8 @@ export const client = createClient({
 
 export const hasFundedAccount = !!DEMO_KEY;
 export const contractAddress = CONTRACT_ADDRESS as `0x${string}`;
+export const chainName = USE_STUDIO ? "GenLayer Studio (local)" : "Bradbury Testnet";
+export const isOnBradbury = !USE_STUDIO;
 
 function dim(grade: string, confidence: "high" | "medium" | "low" | "none", reasoning: string, key_signals: string[]): DimensionScore {
   return { grade, confidence, reasoning, key_signals };
