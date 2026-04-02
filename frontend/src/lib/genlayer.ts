@@ -1,13 +1,14 @@
 import { createClient, createAccount } from "genlayer-js";
-import { testnetBradbury } from "genlayer-js/chains";
+import { testnetBradbury, studionet } from "genlayer-js/chains";
 import type { TrustProfile, DimensionScore } from "../types";
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "";
 const DEMO_KEY = import.meta.env.VITE_DEMO_PRIVATE_KEY || "";
+const USE_STUDIO = import.meta.env.VITE_USE_STUDIO === "true";
 const account = DEMO_KEY ? createAccount(DEMO_KEY) : createAccount();
 
 export const client = createClient({
-  chain: testnetBradbury,
+  chain: USE_STUDIO ? studionet : testnetBradbury,
   account,
 });
 
