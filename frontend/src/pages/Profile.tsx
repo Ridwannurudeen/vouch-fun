@@ -1,11 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense, lazy } from "react";
 import { useParams, Link } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import TrustBadge from "../components/TrustBadge";
 import GradeCard from "../components/GradeCard";
 import GradeBar from "../components/GradeBar";
-import RadarChart from "../components/RadarChart";
 import ConsensusAnimation from "../components/ConsensusAnimation";
 import DisputeModal from "../components/DisputeModal";
 import {
@@ -48,13 +47,28 @@ function cleanHandle(raw: string | undefined): string | undefined {
   if (!raw) return raw;
   let h = decodeURIComponent(raw).trim();
   h = h.replace(/^https?:\/\/(www\.)?github\.com\//i, "");
-  // Convert Twitter/X URLs to @handle format
   const twitterMatch = h.match(/^https?:\/\/(www\.)?(twitter|x)\.com\/([^/]+)\/?$/i);
   if (twitterMatch) {
     h = "@" + twitterMatch[3];
   }
   h = h.replace(/\/$/, "");
+  if (h.startsWith("0x") && h.length === 42) return h.toLowerCase();
+  if (h.endsWith(".eth")) return h.toLowerCase();
+  if (h.startsWith("@")) return `@${h.slice(1).toLowerCase()}`;
   return h || raw;
+}
+
+const RadarChart = lazy(() => import("../components/RadarChart"));
+
+function ChartFallback() {
+  return (
+    <div className="h-[320px] flex items-center justify-center">
+      <div className="text-center">
+        <div className="inline-block w-8 h-8 border-2 border-gray-700 border-t-accent rounded-full animate-spin mb-4" />
+        <p className="text-gray-500 font-mono text-sm">Loading chart...</p>
+      </div>
+    </div>
+  );
 }
 
 export default function Profile() {
@@ -108,12 +122,13 @@ export default function Profile() {
   }, [generating]);
 
   const handleGenerate = async () => {
-    if (!handle || isAddress) return;
+    const target = cleanHandle(handle);
+    if (!target || isAddress) return;
     setGenerating(true);
     setError("");
     try {
-      await generateProfile(handle);
-      const p = await readProfileByHandle(handle);
+      await generateProfile(target);
+      const p = await readProfileByHandle(target);
       if (p && p.overall) setProfile(p);
     } catch (err: any) {
       setError(err.message || "Failed to generate profile");
@@ -123,12 +138,13 @@ export default function Profile() {
   };
 
   const handleRefresh = async () => {
-    if (!handle || isAddress) return;
+    const target = cleanHandle(handle);
+    if (!target || isAddress) return;
     setGenerating(true);
     setError("");
     try {
-      await refreshProfile(handle);
-      const p = await readProfileByHandle(handle);
+      await refreshProfile(target);
+      const p = await readProfileByHandle(target);
       if (p && p.overall) setProfile(p);
     } catch (err: any) {
       setError(err.message || "Failed to refresh profile");
@@ -198,14 +214,12 @@ export default function Profile() {
           </div>
         ) : profile ? (
           <>
-            {/* Header */}
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold font-mono text-white mb-2">
                 {profileId}
               </h1>
               <TrustBadge tier={profile.overall.trust_tier} />
 
-              {/* Trust score */}
               {profile.overall.trust_score != null && (
                 <div className="mt-3">
                   <span className="text-4xl font-bold text-white font-mono">
@@ -215,13 +229,12 @@ export default function Profile() {
                 </div>
               )}
 
-              {/* Verified badge */}
               <div className="mt-2">
                 <span className="inline-flex items-center gap-1 text-xs text-accent bg-accent-dim px-3 py-1 rounded-full">
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm-.75 3.5a.75.75 0 011.5 0V10c0 .199-.079.39-.22.53l-2 2a.75.75 0 11-1.06-1.06l1.78-1.77V5.5z" clipRule="evenodd" />
                   </svg>
-                  Verified by AI Consensus
+                  Trust synthesized via AI consensus
                 </span>
                 {profile.identifier_type && (
                   <span className="ml-2 text-xs text-gray-500 font-mono">
@@ -230,11 +243,14 @@ export default function Profile() {
                 )}
               </div>
 
+              <p className="text-gray-500 text-sm mt-2 max-w-xl mx-auto">
+                This is a judgment layer, not a KYC verification badge. Each dimension includes its own confidence level.
+              </p>
+
               <p className="text-gray-400 mt-3 max-w-lg mx-auto">
                 {profile.overall.summary}
               </p>
 
-              {/* Top signals */}
               {profile.overall.top_signals && profile.overall.top_signals.length > 0 && (
                 <div className="flex flex-wrap gap-2 justify-center mt-3">
                   {profile.overall.top_signals.map((signal, i) => (
@@ -245,7 +261,6 @@ export default function Profile() {
                 </div>
               )}
 
-              {/* Data Sources */}
               {(() => {
                 const srcs = profile.sources || profile.sources_scraped || [];
                 if (srcs.length === 0) return null;
@@ -288,14 +303,12 @@ export default function Profile() {
                 </div>
               )}
 
-              {/* Dispute notice */}
               {profile.disputed && (
                 <div className="mt-3 inline-flex items-center gap-1 text-xs text-red-400 bg-red-500/10 px-3 py-1 rounded-full">
                   Disputed: {profile.dispute_reason}
                 </div>
               )}
 
-              {/* Action buttons */}
               <div className="flex justify-center gap-3 mt-4">
                 <button
                   onClick={handleCopyUrl}
@@ -323,13 +336,13 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Radar chart */}
             <div className="glass rounded-xl p-6 mb-6">
               <h3 className="text-sm font-semibold text-white mb-2 text-center">Trust Dimensions</h3>
-              <RadarChart profileA={profile} />
+              <Suspense fallback={<ChartFallback />}>
+                <RadarChart profileA={profile} />
+              </Suspense>
             </div>
 
-            {/* Grade bars overview */}
             <div className="glass rounded-xl p-6 mb-6">
               <h3 className="text-sm font-semibold text-white mb-4">Grade Overview</h3>
               <div className="space-y-3">
@@ -341,7 +354,6 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Dimension cards */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               {DIMENSIONS.map((dim: DimensionKey) => {
                 const d = profile[dim];
@@ -357,7 +369,6 @@ export default function Profile() {
               })}
             </div>
 
-            {/* Stake section */}
             <div className="glass rounded-xl p-6 mb-6">
               <h3 className="text-sm font-semibold text-white mb-1">Stake Your Assessment</h3>
               <p className="text-xs text-gray-500 mb-4">
@@ -398,7 +409,6 @@ export default function Profile() {
                   {staking ? "Staking..." : "Endorse Grade"}
                 </button>
               </div>
-              {/* Active stakes */}
               {totalStakes > 0 && (
                 <div className="mt-4 border-t border-glass-border pt-3">
                   <div className="flex flex-wrap gap-2">
@@ -414,139 +424,64 @@ export default function Profile() {
               )}
             </div>
 
-            {/* Related actions */}
             <div className="glass rounded-xl p-6 mb-8">
               <h3 className="text-sm font-semibold text-white mb-4">What's next?</h3>
               <div className="grid sm:grid-cols-3 gap-3">
-                {!isAddress && (
-                  <Link
-                    to={`/compare/${handle}`}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-glass-border
-                               hover:border-accent/30 hover:bg-accent-dim transition-colors"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-accent-dim text-accent flex items-center justify-center shrink-0">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                      </svg>
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-white">Compare</div>
-                      <div className="text-xs text-gray-500">Side-by-side analysis</div>
-                    </div>
-                  </Link>
-                )}
-                <Link
-                  to="/explore"
-                  className="flex items-center gap-3 p-3 rounded-lg border border-glass-border
-                             hover:border-accent/30 hover:bg-accent-dim transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-full bg-accent-dim text-accent flex items-center justify-center shrink-0">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-white">Explore</div>
-                    <div className="text-xs text-gray-500">Browse all profiles</div>
-                  </div>
+                <Link to="/explore" className="glass glass-hover rounded-lg p-4 text-center">
+                  <div className="text-sm font-medium text-white mb-1">Explore</div>
+                  <div className="text-xs text-gray-500">Browse other trust profiles</div>
                 </Link>
-                <Link
-                  to="/integrate"
-                  className="flex items-center gap-3 p-3 rounded-lg border border-glass-border
-                             hover:border-accent/30 hover:bg-accent-dim transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-full bg-accent-dim text-accent flex items-center justify-center shrink-0">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-white">Integrate</div>
-                    <div className="text-xs text-gray-500">Use in your contract</div>
-                  </div>
+                <Link to="/integrate" className="glass glass-hover rounded-lg p-4 text-center">
+                  <div className="text-sm font-medium text-white mb-1">Integrate</div>
+                  <div className="text-xs text-gray-500">Use trust checks in contracts</div>
+                </Link>
+                <Link to="/gates" className="glass glass-hover rounded-lg p-4 text-center">
+                  <div className="text-sm font-medium text-white mb-1">Trust Gates</div>
+                  <div className="text-xs text-gray-500">See composability demos</div>
                 </Link>
               </div>
             </div>
-
-            {!isAddress && (
-              <div className="text-center">
-                <button
-                  onClick={handleRefresh}
-                  disabled={generating}
-                  className="text-sm text-gray-500 hover:text-gray-300 underline"
-                >
-                  Refresh profile
-                </button>
-              </div>
-            )}
-
-            {error && (
-              <div className="mt-4 mx-auto max-w-md glass rounded-xl p-4 text-center border border-red-500/30">
-                <p className="text-red-400 text-sm mb-3">{error}</p>
-                <button
-                  onClick={handleRefresh}
-                  className="text-sm px-4 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Retry
-                </button>
-              </div>
-            )}
-
-            {handle && (
-              <DisputeModal
-                handle={handle}
-                isOpen={showDispute}
-                onClose={() => setShowDispute(false)}
-                onDisputed={() => {
-                  readProfileByHandle(handle).then((p) => {
-                    if (p && p.overall) setProfile(p);
-                  });
-                }}
-              />
-            )}
           </>
         ) : (
           <div className="text-center py-20">
-            <h2 className="text-2xl font-bold text-white mb-2 font-mono">{handle}</h2>
-            {isAddress ? (
-              <p className="text-gray-400">
-                No profile found for this address. The owner must vouch their identifier first.
-              </p>
-            ) : (
-              <>
-                <p className="text-gray-400 mb-6">No profile found. Generate one?</p>
-
-                <button
-                  onClick={handleGenerate}
-                  disabled={!hasFundedAccount}
-                  className="px-8 py-3 bg-accent text-white rounded-lg font-medium
-                             hover:bg-accent-bright disabled:bg-gray-700 disabled:text-gray-500 transition-colors"
-                >
-                  Generate Trust Profile
-                </button>
-
-                {!hasFundedAccount && (
-                  <p className="text-amber-400 mt-3 text-sm">
-                    Demo wallet not configured. Profile generation requires GEN tokens for gas.
-                  </p>
-                )}
-                {error && (
-                  <div className="mt-4 mx-auto max-w-md glass rounded-xl p-4 text-center border border-red-500/30">
-                    <p className="text-red-400 text-sm mb-3">{error}</p>
-                    <button
-                      onClick={handleGenerate}
-                      className="text-sm px-4 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                )}
-              </>
+            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold text-white mb-2">No profile found</h2>
+            <p className="text-gray-400 max-w-md mx-auto mb-6">
+              Generate a fresh synthesized trust profile for this identifier to evaluate its six dimensions.
+            </p>
+            {!isAddress && (
+              <button
+                onClick={handleGenerate}
+                disabled={generating}
+                className="px-5 py-3 bg-accent text-white rounded-xl font-medium hover:bg-accent-bright transition-colors"
+              >
+                Generate Profile
+              </button>
             )}
+            {error && <p className="text-sm text-red-400 mt-4">{error}</p>}
           </div>
+        )}
+
+        {profile && (
+          <DisputeModal
+            handle={profile.identifier}
+            isOpen={showDispute}
+            onClose={() => setShowDispute(false)}
+            onDisputed={() => {
+              handleRefresh();
+            }}
+          />
         )}
       </main>
       <Footer />
     </div>
   );
 }
+
+
+
+

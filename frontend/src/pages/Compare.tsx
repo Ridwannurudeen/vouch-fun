@@ -1,13 +1,40 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, Suspense, lazy } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import TrustBadge from "../components/TrustBadge";
 import GradeBar from "../components/GradeBar";
-import RadarChart from "../components/RadarChart";
 import { readProfileByHandle } from "../lib/genlayer";
 import type { TrustProfile, DimensionKey } from "../types";
 import { DIMENSIONS, DIMENSION_LABELS } from "../types";
+
+const RadarChart = lazy(() => import("../components/RadarChart"));
+
+function ChartFallback() {
+  return (
+    <div className="h-[320px] flex items-center justify-center">
+      <div className="text-center">
+        <div className="inline-block w-8 h-8 border-2 border-gray-700 border-t-accent rounded-full animate-spin mb-4" />
+        <p className="text-gray-500 font-mono text-sm">Loading chart...</p>
+      </div>
+    </div>
+  );
+}
+
+function normalizeIdentifier(raw: string) {
+  let value = decodeURIComponent(raw).trim();
+  value = value.replace(/^https?:\/\/(www\.)?github\.com\//i, "");
+  value = value.replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, "@");
+  value = value.replace(/\/$/, "");
+  if (value.startsWith("0x") && value.length === 42) return value.toLowerCase();
+  if (value.endsWith(".eth")) return value.toLowerCase();
+  if (value.startsWith("@")) return `@${value.slice(1).toLowerCase()}`;
+  return value;
+}
+
+function getProfileId(profile: TrustProfile | null, fallback: string) {
+  return profile?.identifier || (profile as any)?.handle || fallback;
+}
 
 export default function Compare() {
   const { a, b } = useParams<{ a?: string; b?: string }>();
@@ -16,38 +43,74 @@ export default function Compare() {
   const [handleB, setHandleB] = useState(b || "");
   const [profileA, setProfileA] = useState<TrustProfile | null>(null);
   const [profileB, setProfileB] = useState<TrustProfile | null>(null);
+  const [missing, setMissing] = useState<string[]>([]);
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const loadProfiles = async (ha: string, hb: string) => {
-    if (!ha.trim() || !hb.trim()) return;
+    const normalizedA = normalizeIdentifier(ha);
+    const normalizedB = normalizeIdentifier(hb);
+    if (!normalizedA || !normalizedB) return;
+
     setLoading(true);
-    const [pa, pb] = await Promise.all([
-      readProfileByHandle(ha.trim()),
-      readProfileByHandle(hb.trim()),
-    ]);
-    setProfileA(pa);
-    setProfileB(pb);
-    setLoading(false);
+    setError("");
+    setMissing([]);
+
+    try {
+      const [pa, pb] = await Promise.all([
+        readProfileByHandle(normalizedA),
+        readProfileByHandle(normalizedB),
+      ]);
+
+      setProfileA(pa);
+      setProfileB(pb);
+
+      const nextMissing: string[] = [];
+      if (!pa) nextMissing.push(normalizedA);
+      if (!pb) nextMissing.push(normalizedB);
+      setMissing(nextMissing);
+
+      if (nextMissing.length > 0) {
+        setError(
+          nextMissing.length === 2
+            ? "Neither identifier has a stored trust profile yet."
+            : `No stored trust profile found for ${nextMissing[0]}.`
+        );
+      }
+    } catch {
+      setProfileA(null);
+      setProfileB(null);
+      setMissing([normalizedA, normalizedB]);
+      setError("Failed to load comparison profiles.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     if (a && b) {
-      setHandleA(a);
-      setHandleB(b);
-      loadProfiles(a, b);
+      const normalizedA = normalizeIdentifier(a);
+      const normalizedB = normalizeIdentifier(b);
+      setHandleA(normalizedA);
+      setHandleB(normalizedB);
+      loadProfiles(normalizedA, normalizedB);
     }
   }, [a, b]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (handleA.trim() && handleB.trim()) {
-      navigate(`/compare/${encodeURIComponent(handleA.trim())}/${encodeURIComponent(handleB.trim())}`);
-      loadProfiles(handleA, handleB);
+    const normalizedA = normalizeIdentifier(handleA);
+    const normalizedB = normalizeIdentifier(handleB);
+    if (normalizedA && normalizedB) {
+      setHandleA(normalizedA);
+      setHandleB(normalizedB);
+      navigate(`/compare/${encodeURIComponent(normalizedA)}/${encodeURIComponent(normalizedB)}`);
+      loadProfiles(normalizedA, normalizedB);
     }
   };
 
-  const idA = profileA?.identifier || (profileA as any)?.handle || handleA;
-  const idB = profileB?.identifier || (profileB as any)?.handle || handleB;
+  const idA = getProfileId(profileA, handleA);
+  const idB = getProfileId(profileB, handleB);
 
   return (
     <div className="min-h-screen bg-void text-white">
@@ -58,7 +121,6 @@ export default function Compare() {
           <p className="text-gray-400">Side-by-side 6-dimension trust comparison</p>
         </div>
 
-        {/* Search inputs */}
         <form onSubmit={handleSubmit} className="flex gap-4 max-w-2xl mx-auto mb-10">
           <input
             type="text"
@@ -87,6 +149,26 @@ export default function Compare() {
           </button>
         </form>
 
+        {error && !loading && (
+          <div className="glass rounded-xl p-5 mb-8 border border-amber-500/20">
+            <p className="text-amber-300 font-medium mb-2">Comparison needs complete profiles</p>
+            <p className="text-sm text-gray-400 mb-4">{error}</p>
+            {missing.length > 0 && (
+              <div className="flex flex-wrap gap-3">
+                {missing.map((identifier) => (
+                  <Link
+                    key={identifier}
+                    to={`/profile/${encodeURIComponent(identifier)}`}
+                    className="text-sm px-4 py-2 glass glass-hover rounded-lg text-accent"
+                  >
+                    Open {identifier}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {loading && (
           <div className="text-center py-12">
             <div className="inline-block w-8 h-8 border-2 border-gray-700 border-t-accent rounded-full animate-spin mb-4" />
@@ -96,7 +178,6 @@ export default function Compare() {
 
         {!loading && profileA && profileB && (
           <>
-            {/* Side-by-side badges */}
             <div className="grid md:grid-cols-2 gap-6 mb-8">
               <div className="text-center glass rounded-xl p-6">
                 <h3 className="text-xl font-bold font-mono text-white mb-2">
@@ -139,15 +220,15 @@ export default function Compare() {
               </div>
             </div>
 
-            {/* Radar chart */}
             <div className="glass rounded-xl p-6 mb-8">
               <h3 className="text-lg font-bold text-white mb-4 text-center">
                 6-Dimension Comparison
               </h3>
-              <RadarChart profileA={profileA} profileB={profileB} />
+              <Suspense fallback={<ChartFallback />}>
+                <RadarChart profileA={profileA} profileB={profileB} />
+              </Suspense>
             </div>
 
-            {/* Dimension comparison table */}
             <div className="glass rounded-xl overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
