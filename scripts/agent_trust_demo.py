@@ -20,7 +20,7 @@ import sys
 
 # Simulated agent framework — in production this would be LangChain, CrewAI, etc.
 
-DEMO_VOUCH_ADDRESS = "0xCEfF3FD4375B1B3437f181BcB30d4b06F84b2E4C"
+DEMO_VOUCH_ADDRESS = "0x69690E34f49F29344A393707FF5f364eFc40B0A1"
 DEMO_RPC = "https://rpc-bradbury.genlayer.com"
 
 

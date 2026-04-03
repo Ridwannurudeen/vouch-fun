@@ -2,7 +2,7 @@ import { createClient, createAccount } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
 
 const KEY = process.env.PRIVATE_KEY || process.env.VITE_PRIVATE_KEY;
-const ADDR = process.argv[2] || "0xCEfF3FD4375B1B3437f181BcB30d4b06F84b2E4C";
+const ADDR = process.argv[2] || "0x69690E34f49F29344A393707FF5f364eFc40B0A1";
 
 const account = createAccount(KEY);
 const client = createClient({ chain: studionet, account });

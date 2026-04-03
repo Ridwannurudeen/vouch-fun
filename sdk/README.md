@@ -7,7 +7,7 @@ One-line trust checks for any GenLayer Intelligent Contract.
 ```python
 from vouch import VouchClient
 
-VOUCH_ADDRESS = "0xCEfF3FD4375B1B3437f181BcB30d4b06F84b2E4C"
+VOUCH_ADDRESS = "0x69690E34f49F29344A393707FF5f364eFc40B0A1"
 client = VouchClient(VOUCH_ADDRESS)
 
 # Simple: is this address trusted?
@@ -39,7 +39,7 @@ if result["passed"]:
 ```python
 from vouch import quick_check
 
-VOUCH_ADDR = "0xCEfF3FD4375B1B3437f181BcB30d4b06F84b2E4C"
+VOUCH_ADDR = "0x69690E34f49F29344A393707FF5f364eFc40B0A1"
 
 class MyContract(gl.Contract):
     @gl.public.write

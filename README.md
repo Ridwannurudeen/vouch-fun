@@ -165,7 +165,7 @@ post_job("Audit my contract", "Full audit", "code", "B")  # Only B+ can bid
 ```python
 from vouch import VouchClient
 
-client = VouchClient("0xCEfF3FD4375B1B3437f181BcB30d4b06F84b2E4C")
+client = VouchClient("0x69690E34f49F29344A393707FF5f364eFc40B0A1")
 if client.is_trusted(addr):
     proceed()
 if client.meets_threshold(addr, "code", "B"):
@@ -222,7 +222,7 @@ vouch-fun/
 
 | Contract | Address | Network |
 |----------|---------|---------|
-| VouchProtocol v4 | `0xCEfF3FD4375B1B3437f181BcB30d4b06F84b2E4C` | Bradbury Testnet |
+| VouchProtocol v4 | `0x69690E34f49F29344A393707FF5f364eFc40B0A1` | Bradbury Testnet |
 
 ---
 

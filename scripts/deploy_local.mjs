@@ -7,8 +7,8 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PRIVATE_KEY = process.env.DEPLOY_KEY || '';
 
-// localnet chain (ID 61127) — points to http://127.0.0.1:4000/api by default
-const localStudio = localnet;
+// Override localnet to point to self-hosted Studio RPC on VPS
+const localStudio = { ...localnet, rpcUrls: { default: { http: ['https://vouch.gudman.xyz/studio-rpc'] } } };
 
 async function pollTx(client, txHash) {
   for (let i = 0; i < 120; i++) {
@@ -31,7 +31,7 @@ async function main() {
   const client = createClient({ chain: localStudio, account });
   console.log('Account:', account.address);
 
-  const code = readFileSync(resolve(__dirname, 'vouch_protocol.py'), 'utf8');
+  const code = readFileSync(resolve(__dirname, '../contracts/vouch_protocol.py'), 'utf8');
   console.log('Deploying VouchProtocol... (' + code.length + ' bytes)');
 
   const txHash = await client.deployContract({ code, args: [], value: 0n });

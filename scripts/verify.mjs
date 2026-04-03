@@ -2,7 +2,7 @@ import { createClient, createAccount } from 'genlayer-js';
 import { testnetBradbury } from 'genlayer-js/chains';
 
 const PRIVATE_KEY = process.env.DEPLOY_KEY || '';
-const CONTRACT = '0xCEfF3FD4375B1B3437f181BcB30d4b06F84b2E4C';
+const CONTRACT = '0x69690E34f49F29344A393707FF5f364eFc40B0A1';
 
 const account = createAccount(PRIVATE_KEY);
 const client = createClient({ chain: testnetBradbury, account });

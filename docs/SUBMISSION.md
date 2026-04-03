@@ -26,7 +26,7 @@ The composable layer is where vouch.fun becomes infrastructure rather than a sta
 ## Tech Stack
 
 - GenLayer Intelligent Contract (Python) — `gl.nondet.web.render()`, `gl.eq_principle.prompt_comparative()`
-- Contract: `0xCEfF3FD4375B1B3437f181BcB30d4b06F84b2E4C` on GenLayer Studio
+- Contract: `0x69690E34f49F29344A393707FF5f364eFc40B0A1` on GenLayer Studio
 - genlayer-js v0.28.2 — client, deploy, read/write contract interactions
 - Vite + React/TypeScript frontend with Framer Motion
 - Live data sources: GitHub REST API v3, npm registry, Etherscan API, Farcaster/Warpcast, Lens Protocol (Hey.xyz), Tally.xyz, DefiLlama
@@ -35,7 +35,7 @@ The composable layer is where vouch.fun becomes infrastructure rather than a sta
 
 - Live app: https://vouch.gudman.xyz
 - GitHub: https://github.com/Ridwannurudeen/vouch-fun
-- Contract: `0xCEfF3FD4375B1B3437f181BcB30d4b06F84b2E4C` on GenLayer Studio
+- Contract: `0x69690E34f49F29344A393707FF5f364eFc40B0A1` on GenLayer Studio
 
 ## Track
 
