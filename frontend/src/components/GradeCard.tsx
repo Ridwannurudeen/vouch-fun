@@ -17,6 +17,13 @@ const CONFIDENCE_STYLE: Record<string, string> = {
   none: "bg-gray-500/15 text-gray-500",
 };
 
+const CONFIDENCE_COPY: Record<string, string> = {
+  high: "High confidence: multiple public signals line up cleanly.",
+  medium: "Medium confidence: enough evidence exists, but coverage is partial.",
+  low: "Low confidence: the score relies on limited public evidence.",
+  none: "No confidence: the protocol could not find enough evidence to score this dimension.",
+};
+
 function gradeStyle(grade: string) {
   const letter = grade?.charAt(0)?.toUpperCase() || "N/A";
   return GRADE_COLORS[letter] || GRADE_COLORS["N/A"];
@@ -26,9 +33,10 @@ interface GradeCardProps {
   title: string;
   dimension: DimensionKey;
   score: DimensionScore;
+  evidenceSources?: string[];
 }
 
-export default function GradeCard({ title, dimension, score }: GradeCardProps) {
+export default function GradeCard({ title, dimension, score, evidenceSources = [] }: GradeCardProps) {
   const iconPath = DIMENSION_ICONS[dimension];
 
   return (
@@ -50,17 +58,36 @@ export default function GradeCard({ title, dimension, score }: GradeCardProps) {
         </div>
       </div>
 
-      {score.key_signals && score.key_signals.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {score.key_signals.map((signal, i) => (
-            <span key={i} className="text-xs bg-white/5 text-gray-400 px-2 py-0.5 rounded">
-              {signal}
-            </span>
-          ))}
+      <p className="text-xs text-gray-500 mb-3">{CONFIDENCE_COPY[score.confidence] || CONFIDENCE_COPY.none}</p>
+
+      {evidenceSources.length > 0 && (
+        <div className="mb-3">
+          <div className="text-[11px] uppercase tracking-[0.22em] text-gray-600 mb-2">Evidence Trace</div>
+          <div className="flex flex-wrap gap-1.5">
+            {evidenceSources.map((source) => (
+              <span key={source} className="text-xs bg-white/5 text-gray-300 px-2 py-0.5 rounded border border-white/5">
+                {source}
+              </span>
+            ))}
+          </div>
         </div>
       )}
 
-      <p className="text-sm text-gray-400 italic">{score.reasoning}</p>
+      {score.key_signals && score.key_signals.length > 0 && (
+        <div className="mb-3">
+          <div className="text-[11px] uppercase tracking-[0.22em] text-gray-600 mb-2">Observed Signals</div>
+          <div className="flex flex-wrap gap-1.5">
+            {score.key_signals.map((signal, i) => (
+              <span key={i} className="text-xs bg-white/5 text-gray-400 px-2 py-0.5 rounded">
+                {signal}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="text-[11px] uppercase tracking-[0.22em] text-gray-600 mb-2">Why This Score</div>
+      <p className="text-sm text-gray-300 leading-6">{score.reasoning}</p>
     </div>
   );
 }

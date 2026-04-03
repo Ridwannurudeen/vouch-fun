@@ -6,7 +6,7 @@ interface DisputeModalProps {
   handle: string;
   isOpen: boolean;
   onClose: () => void;
-  onDisputed: () => void;
+  onDisputed: (reason: string) => void;
 }
 
 export default function DisputeModal({ handle, isOpen, onClose, onDisputed }: DisputeModalProps) {
@@ -15,12 +15,14 @@ export default function DisputeModal({ handle, isOpen, onClose, onDisputed }: Di
   const [error, setError] = useState("");
 
   const handleSubmit = async () => {
-    if (!reason.trim()) return;
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) return;
     setSubmitting(true);
     setError("");
     try {
-      await disputeProfile(handle, reason);
-      onDisputed();
+      await disputeProfile(handle, trimmedReason);
+      onDisputed(trimmedReason);
+      setReason("");
       onClose();
     } catch (err: any) {
       setError(err.message || "Failed to submit dispute. Testnet may be unavailable.");
@@ -47,15 +49,18 @@ export default function DisputeModal({ handle, isOpen, onClose, onDisputed }: Di
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-white mb-1">Challenge This Score</h3>
-            <p className="text-sm text-gray-400 mb-4">
+            <p className="text-sm text-gray-400 mb-2">
               Submit evidence that this profile's trust assessment is inaccurate.
-              Validators will re-evaluate with your context.
+              Validators will re-evaluate the profile against fresh web evidence.
+            </p>
+            <p className="text-xs text-gray-500 mb-4">
+              This challenge becomes part of the visible review trail on the profile page.
             </p>
 
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Why should this score be reconsidered? Provide evidence or reasoning..."
+              placeholder="Why should this score be reconsidered? Include the source or event that changes the trust judgment..."
               className="w-full h-32 px-4 py-3 bg-white/5 border border-glass-border rounded-lg text-sm text-white
                          placeholder:text-gray-600 focus:outline-none focus:border-accent/50 resize-none"
               disabled={submitting}
