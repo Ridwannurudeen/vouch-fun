@@ -8,6 +8,30 @@ Web-grounded trust synthesis via decentralized AI consensus. 5 independent valid
 
 ---
 
+<p align="center">
+  <img src="docs/screenshots/marketplace-demo.gif" alt="vouch.fun Marketplace Demo" width="720" />
+</p>
+
+### Trust Marketplace --- category browsing, featured experts, rich profile cards
+
+<p align="center">
+  <img src="docs/screenshots/marketplace.png" alt="Trust Marketplace" width="720" />
+</p>
+
+### Homepage --- search any identity, 6-axis radar visualization
+
+<p align="center">
+  <img src="docs/screenshots/homepage.png" alt="Homepage" width="720" />
+</p>
+
+### Profile --- trust score, confidence levels, freshness, dispute flow
+
+<p align="center">
+  <img src="docs/screenshots/profile.png" alt="Profile Page" width="720" />
+</p>
+
+---
+
 ## Why vouch.fun?
 
 In the agentic economy, autonomous agents hire each other, delegate tasks, and transact on behalf of users. Before any interaction, an agent needs to answer: **"Can I trust this entity?"**
