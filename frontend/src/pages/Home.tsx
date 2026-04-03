@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, useInView, AnimatePresence } from "framer-motion";
-import { readProfileByHandle, generateProfile } from "../lib/genlayer";
+import { readProfileByHandle, generateProfile, invalidateCache } from "../lib/genlayer";
+import ConsensusAnimation from "../components/ConsensusAnimation";
 import type { TrustProfile, DimensionKey } from "../types";
 import { DIMENSIONS, DIMENSION_LABELS } from "../types";
 
@@ -509,9 +510,8 @@ function VouchYourself() {
   const [walletAddr, setWalletAddr] = useState("");
   const [showWallet, setShowWallet] = useState(false);
   const [phase, setPhase] = useState<"input" | "generating" | "done">("input");
-  const [profile, setProfile] = useState<TrustProfile | null>(null);
+  const [profile] = useState<TrustProfile | null>(null);
   const [error, setError] = useState("");
-  const [slow, setSlow] = useState(false);
   const navigate = useNavigate();
 
   const handleVouch = async (e: React.FormEvent) => {
@@ -524,24 +524,24 @@ function VouchYourself() {
     if (!trimmed || trimmed === "@") return;
     setPhase("generating");
     setError("");
-    setSlow(false);
-    const slowTimer = setTimeout(() => setSlow(true), 60000);
+    let timeoutId: ReturnType<typeof setTimeout>;
     try {
       const wallet = walletAddr.trim();
-      await generateProfile(trimmed, wallet);
-      const p = await readProfileByHandle(trimmed);
-      if (p && p.overall) {
-        setProfile(p);
-        setPhase("done");
-      } else {
-        // Profile generated but maybe needs a moment — navigate to profile page
-        navigate(`/profile/${encodeURIComponent(trimmed)}`);
-      }
+      const timeout = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error("TIMEOUT")), 180000);
+      });
+      await Promise.race([generateProfile(trimmed, wallet), timeout]);
+      clearTimeout(timeoutId!);
+      invalidateCache();
+      // Navigate to profile page — no redundant re-fetch
+      navigate(`/profile/${encodeURIComponent(trimmed)}`);
     } catch (err: any) {
-      setError(err.message || "Generation failed — validators may be busy");
+      if (err.message === "TIMEOUT") {
+        setError("Consensus timed out — validators may be congested. Try again or check the profile page.");
+      } else {
+        setError(err.message || "Generation failed — validators may be busy");
+      }
       setPhase("input");
-    } finally {
-      clearTimeout(slowTimer);
     }
   };
 
@@ -657,24 +657,8 @@ function VouchYourself() {
 
           {phase === "generating" ? (
             <div className="glass rounded-2xl p-8">
-              <div className="flex flex-col items-center gap-4">
-                {/* Animated dots */}
-                <div className="flex gap-2">
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <motion.div
-                      key={i}
-                      className="w-3 h-3 rounded-full bg-indigo-500"
-                      animate={{ scale: [1, 1.4, 1], opacity: [0.3, 1, 0.3] }}
-                      transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
-                    />
-                  ))}
-                </div>
-                <div className="text-sm text-white/40 font-mono">Validators deliberating on <span className="text-indigo-400">{handle}</span>...</div>
-                <div className="text-[10px] text-white/15 font-mono">This takes 30-120 seconds — AI consensus in progress</div>
-                {slow && (
-                  <div className="text-xs text-amber-400/60 mt-2">Taking longer than usual — validators are still working...</div>
-                )}
-              </div>
+              <ConsensusAnimation />
+              <div className="text-sm text-white/40 font-mono mt-2 text-center">Validators deliberating on <span className="text-indigo-400">{handle}</span>...</div>
             </div>
           ) : (
             <form onSubmit={handleVouch} className="flex flex-col gap-3 max-w-lg mx-auto">

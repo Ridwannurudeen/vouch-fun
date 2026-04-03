@@ -243,7 +243,15 @@ export async function getStats(): Promise<ProtocolStats> {
   return { profile_count: Object.keys(DEMO_PROFILES).length, query_count: 0, dispute_count: 0, _demo: true } as any;
 }
 
-export async function getAllProfiles(): Promise<TrustProfile[]> {
+// In-memory profile cache with 5-minute TTL (stale-while-revalidate)
+const CACHE_TTL = 5 * 60 * 1000;
+let profileCache: { profiles: TrustProfile[]; timestamp: number } | null = null;
+
+export function invalidateCache() {
+  profileCache = null;
+}
+
+async function fetchAllProfilesFresh(): Promise<TrustProfile[]> {
   try {
     const result = await client.readContract({
       address: contractAddress,
@@ -259,6 +267,20 @@ export async function getAllProfiles(): Promise<TrustProfile[]> {
   } catch {}
   isUsingFallbackData = true;
   return Object.values(DEMO_PROFILES).map(p => ({ ...p, _demo: true } as TrustProfile));
+}
+
+export async function getAllProfiles(): Promise<TrustProfile[]> {
+  const now = Date.now();
+  if (profileCache && now - profileCache.timestamp < CACHE_TTL) {
+    // Stale-while-revalidate: return cached, refresh in background
+    fetchAllProfilesFresh().then((fresh) => {
+      profileCache = { profiles: fresh, timestamp: Date.now() };
+    }).catch(() => {});
+    return profileCache.profiles;
+  }
+  const profiles = await fetchAllProfilesFresh();
+  profileCache = { profiles, timestamp: Date.now() };
+  return profiles;
 }
 
 export async function disputeProfile(handle: string, reason: string): Promise<any> {

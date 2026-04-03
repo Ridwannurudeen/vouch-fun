@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ProfileCard, { deriveRoles } from "../components/ProfileCard";
-import { getAllProfiles, isUsingFallbackData } from "../lib/genlayer";
+import { getAllProfiles, invalidateCache, isUsingFallbackData } from "../lib/genlayer";
 import type { TrustProfile, DimensionKey } from "../types";
 import { DIMENSIONS, DIMENSION_LABELS } from "../types";
 
@@ -413,11 +413,30 @@ export default function Explore() {
         </div>
 
         {loading ? (
-          <div className="text-center py-20">
-            <div className="inline-block w-8 h-8 border-2 border-gray-700 border-t-accent rounded-full animate-spin mb-4" />
-            <p className="text-gray-500 font-mono text-sm">
-              {viewMode === "marketplace" ? "Loading marketplace..." : "Loading profiles..."}
-            </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="glass rounded-2xl p-5 animate-pulse">
+                {/* Name + badge row */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-white/5" />
+                  <div className="flex-1">
+                    <div className="h-4 w-28 bg-white/5 rounded mb-1.5" />
+                    <div className="h-3 w-16 bg-white/5 rounded" />
+                  </div>
+                </div>
+                {/* Tags */}
+                <div className="flex gap-2 mb-4">
+                  <div className="h-5 w-14 bg-white/5 rounded-full" />
+                  <div className="h-5 w-20 bg-white/5 rounded-full" />
+                  <div className="h-5 w-16 bg-white/5 rounded-full" />
+                </div>
+                {/* Score bar */}
+                <div className="h-2 w-full bg-white/5 rounded-full mb-4" />
+                {/* Summary lines */}
+                <div className="h-3 w-full bg-white/5 rounded mb-2" />
+                <div className="h-3 w-3/4 bg-white/5 rounded" />
+              </div>
+            ))}
           </div>
         ) : error ? (
           <div className="text-center py-20">
@@ -428,7 +447,7 @@ export default function Explore() {
             </div>
             <p className="text-red-400 font-medium mb-2">{error}</p>
             <button
-              onClick={() => { setError(null); setLoading(true); getAllProfiles().then(setProfiles).catch(() => setError("Still unreachable.")).finally(() => setLoading(false)); }}
+              onClick={() => { setError(null); setLoading(true); invalidateCache(); getAllProfiles().then(setProfiles).catch(() => setError("Still unreachable.")).finally(() => setLoading(false)); }}
               className="text-sm text-accent hover:text-accent-bright font-medium underline"
             >
               Retry
