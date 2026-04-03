@@ -9,13 +9,13 @@ QUERY_FEE = 0  # wei — zero for demo, nonzero in production
 MIN_STAKE = 0  # wei — zero for demo
 PROFILE_TTL = 7776000  # 90 days in seconds — profiles decay after this
 
-# Known figures — inject verified context so AI doesn't undergrade
+# Known figures — provide factual context to help AI evaluation accuracy
 _KNOWN = {
-    "samczsun": "CRITICAL CONTEXT: samczsun is THE most famous blockchain security researcher alive. Head of Security at Paradigm. Saved over $1 BILLION in whitehat rescue operations (Sushiswap $350M, Bancor, etc). Created samczsun.com and the rekt test. 300k+ Twitter followers. His GitHub repos include security tools used across the industry. He MUST receive code=A, social=A, onchain=A, identity=A. Score 85+, tier TRUSTED.",
-    "gakonst": "CRITICAL CONTEXT: gakonst (Georgios Konstantopoulos) is CTO of Paradigm, the top crypto VC. He created Foundry (the dominant Solidity development framework with 8k+ stars) and ethers-rs (the Rust Ethereum library with 2k+ stars). He has 25k+ combined GitHub stars. He MUST receive code=A. Score 80+, tier TRUSTED.",
-    "haydenzadams": "CRITICAL CONTEXT: Hayden Adams is the creator of Uniswap, the largest decentralized exchange. Pioneer of automated market makers. Over $1 trillion cumulative trading volume. He MUST receive defi=A, governance=A, onchain=A. Score 90+, tier TRUSTED.",
-    "staborosch": "CRITICAL CONTEXT: Stani Kulechov is the founder of Aave, one of the largest DeFi lending protocols. Aave governance pioneer. defi=A, governance=A.",
-    "transmissions11": "CRITICAL CONTEXT: t11s (transmissions11) is a prolific Solidity developer at Paradigm. Created Solmate (gas-optimized Solidity library, 2k+ stars). code=A.",
+    "samczsun": "Context: samczsun is a well-known blockchain security researcher at Paradigm. Known for whitehat rescue operations and security tooling. Has a significant Twitter following and active GitHub presence.",
+    "gakonst": "Context: gakonst (Georgios Konstantopoulos) is CTO of Paradigm. Creator of Foundry (Solidity dev framework) and ethers-rs (Rust Ethereum library). Active open-source contributor.",
+    "haydenzadams": "Context: Hayden Adams is the creator of Uniswap, a major decentralized exchange protocol. Pioneer of automated market makers.",
+    "staborosch": "Context: Stani Kulechov is the founder of Aave, a major DeFi lending protocol. Active in DeFi governance.",
+    "transmissions11": "Context: t11s (transmissions11) is a Solidity developer at Paradigm. Creator of Solmate, a gas-optimized Solidity library.",
 }
 
 def _dt(s):

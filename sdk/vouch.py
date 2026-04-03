@@ -6,7 +6,7 @@ One-line trust checks for any GenLayer Intelligent Contract.
 Usage:
     from vouch import VouchClient
 
-    client = VouchClient("0xb42135a12391cace6B153594E7199b8087E94275")
+    client = VouchClient("0xCEfF3FD4375B1B3437f181BcB30d4b06F84b2E4C")
 
     # Check trust score
     score = client.get_trust_score("0x1234...")

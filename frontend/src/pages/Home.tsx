@@ -17,7 +17,7 @@ const GRADE_COLOR: Record<string, string> = {
 };
 
 /* ═══════════════════════════════════════════════════
-   #1 FIX: HERO ANIMATION — Trust Constellation
+   HERO ANIMATION — Trust Constellation
    ═══════════════════════════════════════════════════ */
 const CONSTELLATION_NODES = [
   { angle: -90,  label: "Code",    color: "#60a5fa", shortColor: "blue" },
@@ -153,7 +153,7 @@ function TrustConstellation() {
 }
 
 /* ═══════════════════════════════════════════════════
-   #3 FIX: SOCIAL PROOF — CountUp animation
+   SOCIAL PROOF — CountUp animation
    ═══════════════════════════════════════════════════ */
 function CountUp({ target, suffix = "" }: { target: number; suffix?: string }) {
   const [count, setCount] = useState(0);
@@ -178,7 +178,7 @@ function CountUp({ target, suffix = "" }: { target: number; suffix?: string }) {
 }
 
 /* ═══════════════════════════════════════════════════
-   #4 FIX: BETTER NEBULA — more shapes, more dynamic
+   BETTER NEBULA — more shapes, more dynamic
    ═══════════════════════════════════════════════════ */
 function Nebula() {
   return (
@@ -297,7 +297,7 @@ function CommandSearch() {
 }
 
 /* ═══════════════════════════════════════════════════
-   #7 FIX: LARGER SCORE RING (80px)
+   LARGER SCORE RING (80px)
    ═══════════════════════════════════════════════════ */
 function ScoreRing({ score, size = 80 }: { score: number; size?: number }) {
   const r = (size / 2) - 5;
@@ -324,7 +324,7 @@ function ScoreRing({ score, size = 80 }: { score: number; size?: number }) {
 }
 
 /* ═══════════════════════════════════════════════════
-   #7 FIX: AGENT ID CARD — centered large ring
+   AGENT ID CARD — centered large ring
    ═══════════════════════════════════════════════════ */
 function AgentCard({ profile }: { profile: TrustProfile }) {
   const id = profile.identifier || "";
@@ -473,7 +473,7 @@ score = int(str(vouch.get_trust_score(addr)))`;
 }
 
 /* ═══════════════════════════════════════════════════
-   #2 FIX: SECTION WRAPPER with stagger
+   SECTION WRAPPER with stagger
    ═══════════════════════════════════════════════════ */
 function FadeIn({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -746,7 +746,7 @@ export default function Home() {
       <div className="relative z-10">
         <Nav />
 
-        {/* ─── #1 FIX: HERO — split layout with constellation ─── */}
+        {/* ─── HERO — split layout with constellation ─── */}
         <section className="pt-28 sm:pt-32 lg:pt-36 pb-12 sm:pb-20 px-4 grid-bg">
           <div className="max-w-6xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
@@ -759,7 +759,7 @@ export default function Home() {
                   </div>
                 </motion.div>
 
-                {/* #6 FIX: TYPOGRAPHY — massive, dramatic */}
+                {/* TYPOGRAPHY — massive, dramatic */}
                 <motion.h1
                   initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.1 }}
@@ -796,7 +796,7 @@ export default function Home() {
                 </motion.div>
               </div>
 
-              {/* Right: #1 & #5 FIX — constellation as signature visual + brand mark */}
+              {/* Right:  — constellation as signature visual + brand mark */}
               <motion.div className="order-1 lg:order-2 flex justify-center"
                 initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 1, delay: 0.2 }}>
@@ -808,7 +808,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ─── #3 FIX: SOCIAL PROOF BAR — counters + badges ─── */}
+        {/* ─── SOCIAL PROOF BAR — counters + badges ─── */}
         <FadeIn>
           <div className="border-y border-white/[.04] bg-white/[.01]">
             <div className="max-w-5xl mx-auto px-4 py-6 flex flex-wrap justify-center gap-x-10 gap-y-4">
@@ -833,7 +833,7 @@ export default function Home() {
         {/* ─── VOUCH YOURSELF — the viral hook ─── */}
         <VouchYourself />
 
-        {/* ─── #2 FIX: WHY AGENTS — left-aligned title, asymmetric cards ─── */}
+        {/* ─── WHY AGENTS — left-aligned title, asymmetric cards ─── */}
         <section className="py-20 sm:py-28 px-4">
           <div className="max-w-5xl mx-auto">
             <FadeIn>
@@ -873,7 +873,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ─── #2 FIX: 6 DIMENSIONS — true bento grid with varied sizes ─── */}
+        {/* ─── 6 DIMENSIONS — true bento grid with varied sizes ─── */}
         <section className="py-20 sm:py-28 px-4">
           <div className="max-w-5xl mx-auto">
             <FadeIn>
@@ -970,7 +970,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ─── #2 FIX: HOW IT WORKS — horizontal timeline ─── */}
+        {/* ─── HOW IT WORKS — horizontal timeline ─── */}
         <section className="py-20 sm:py-28 px-4 overflow-hidden">
           <div className="max-w-5xl mx-auto">
             <FadeIn>
@@ -1044,7 +1044,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ─── #2 FIX: ECONOMIC MODEL — big numbers, not cards ─── */}
+        {/* ─── ECONOMIC MODEL — big numbers, not cards ─── */}
         <section className="py-20 sm:py-28 px-4">
           <div className="max-w-4xl mx-auto">
             <FadeIn>

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ProfileCard from "../components/ProfileCard";
-import { getAllProfiles } from "../lib/genlayer";
+import { getAllProfiles, isUsingFallbackData } from "../lib/genlayer";
 import type { TrustProfile, DimensionKey } from "../types";
 import { DIMENSIONS, DIMENSION_LABELS } from "../types";
 
@@ -86,6 +86,14 @@ export default function Explore() {
             All trust profiles evaluated across 6 dimensions by AI consensus on GenLayer
           </p>
         </div>
+
+        {isUsingFallbackData && !loading && (
+          <div className="mb-6 px-4 py-3 rounded-xl border border-yellow-500/30 bg-yellow-500/5 text-center">
+            <p className="text-yellow-400 text-sm font-mono">
+              Showing demo profiles — contract unavailable. Live data loads when testnet is online.
+            </p>
+          </div>
+        )}
 
         <div className="flex justify-center gap-8 mb-6 text-sm font-mono text-gray-500">
           <span>{profiles.length} profiles</span>

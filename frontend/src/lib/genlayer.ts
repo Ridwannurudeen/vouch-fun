@@ -43,7 +43,8 @@ function dim(grade: string, confidence: "high" | "medium" | "low" | "none", reas
   return { grade, confidence, reasoning, key_signals };
 }
 
-// v3 fallback profiles — 6 dimensions + confidence
+// Fallback profiles — shown only when contract is unreachable
+// These are clearly marked as demo data in the UI
 const DEMO_PROFILES: Record<string, TrustProfile> = {
   vbuterin: {
     identifier: "vbuterin", identifier_type: "github",
@@ -126,6 +127,9 @@ export async function readProfile(address: string): Promise<TrustProfile | null>
   return null;
 }
 
+// Track whether we're serving live or fallback data
+export let isUsingFallbackData = false;
+
 export async function readProfileByHandle(handle: string): Promise<TrustProfile | null> {
   const key = handle.trim().toLowerCase();
   try {
@@ -135,9 +139,14 @@ export async function readProfileByHandle(handle: string): Promise<TrustProfile 
       args: [key],
     });
     const parsed = typeof result === "string" ? JSON.parse(result) : (result as any);
-    if (parsed && parsed.overall) return parsed;
+    if (parsed && parsed.overall) { isUsingFallbackData = false; return parsed; }
   } catch {}
-  return DEMO_PROFILES[key] || null;
+  const demo = DEMO_PROFILES[key];
+  if (demo) {
+    isUsingFallbackData = true;
+    return { ...demo, _demo: true } as TrustProfile;
+  }
+  return null;
 }
 
 export async function lookupAddress(handle: string): Promise<string> {
@@ -231,7 +240,7 @@ export async function getStats(): Promise<ProtocolStats> {
     const parsed = typeof result === "string" ? JSON.parse(result) : (result as any);
     if (parsed && typeof parsed.profile_count === "number") return parsed;
   } catch {}
-  return { profile_count: Object.keys(DEMO_PROFILES).length, query_count: 0, dispute_count: 0 };
+  return { profile_count: Object.keys(DEMO_PROFILES).length, query_count: 0, dispute_count: 0, _demo: true } as any;
 }
 
 export async function getAllProfiles(): Promise<TrustProfile[]> {
@@ -243,11 +252,13 @@ export async function getAllProfiles(): Promise<TrustProfile[]> {
     });
     const handles: string[] = typeof result === "string" ? JSON.parse(result) : (result as any);
     if (Array.isArray(handles) && handles.length > 0) {
+      isUsingFallbackData = false;
       const profiles = await Promise.all(handles.map((h: string) => readProfileByHandle(h)));
       return profiles.filter((p): p is TrustProfile => p !== null);
     }
   } catch {}
-  return Object.values(DEMO_PROFILES);
+  isUsingFallbackData = true;
+  return Object.values(DEMO_PROFILES).map(p => ({ ...p, _demo: true } as TrustProfile));
 }
 
 export async function disputeProfile(handle: string, reason: string): Promise<any> {

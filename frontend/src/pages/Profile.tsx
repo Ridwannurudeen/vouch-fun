@@ -313,6 +313,13 @@ export default function Profile() {
           </div>
         ) : profile ? (
           <>
+            {(profile as any)._demo && (
+              <div className="mb-6 px-4 py-3 rounded-xl border border-yellow-500/30 bg-yellow-500/5 text-center">
+                <p className="text-yellow-400 text-sm font-mono">
+                  Demo profile — contract unavailable. Generate a live profile when testnet is online.
+                </p>
+              </div>
+            )}
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold font-mono text-white mb-2">{profileId}</h1>
               <TrustBadge tier={profile.overall.trust_tier} />

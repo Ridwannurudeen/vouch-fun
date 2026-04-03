@@ -8,19 +8,6 @@ Web-grounded trust synthesis via decentralized AI consensus. 5 independent valid
 
 ---
 
-## Screenshots
-
-| Home | Profile | Gates |
-|------|---------|-------|
-| ![Home](docs/screenshots/home.png) | ![Profile](docs/screenshots/profile.png) | ![Gates](docs/screenshots/gates.png) |
-
-> **To add screenshots:** take 3 browser screenshots and save them to `docs/screenshots/`:
-> - `home.png` — the landing page (hero section + stats bar)
-> - `profile.png` — a profile page showing samczsun with all 6 trust dimensions and the radar chart
-> - `gates.png` — the consumer contracts / trust gates section showing the 4 gated examples
-
----
-
 ## Why vouch.fun?
 
 In the agentic economy, autonomous agents hire each other, delegate tasks, and transact on behalf of users. Before any interaction, an agent needs to answer: **"Can I trust this entity?"**
@@ -94,7 +81,7 @@ Each dimension returns a structured assessment:
    Confidence is HIGH only when real data supports it; NONE when no evidence exists
 
 5. Equivalence Principle Consensus
-   gl.eq_principle.prompt_non_comparative() compares subjective assessments
+   gl.eq_principle.prompt_comparative() compares subjective assessments
    Validators agree on "equivalent" evaluations, not identical ones
    Outliers are filtered --- this is impossible on deterministic blockchains
 
@@ -196,7 +183,7 @@ bid("0", "I'll audit with formal verification")  # Contract enforces grade check
 ```python
 from vouch import VouchClient
 
-client = VouchClient("0x1f63816a7571cBbA67694073b658a04C38FF19d3")
+client = VouchClient("0xCEfF3FD4375B1B3437f181BcB30d4b06F84b2E4C")
 
 # Simple checks
 if client.is_trusted(addr): proceed()
@@ -376,7 +363,7 @@ Every profile stores its provenance:
 | Layer | Technology |
 |-------|------------|
 | Contracts | Python Intelligent Contracts on GenLayer Studio |
-| Consensus | Optimistic Democracy with `prompt_non_comparative` equivalence principle |
+| Consensus | Optimistic Democracy with `prompt_comparative` equivalence principle |
 | AI Evaluation | `gl.nondet.exec_prompt()` --- 5 independent validator instances |
 | Composability | `gl.ContractAt()` for native cross-contract trust queries |
 | Frontend | React 19 + TypeScript + Vite + Tailwind CSS 4 |
@@ -389,7 +376,7 @@ Every profile stores its provenance:
 
 | Contract | Address | Description |
 |----------|---------|-------------|
-| VouchProtocol v4 | `0x1f63816a7571cBbA67694073b658a04C38FF19d3` (GenLayer Studio) | Core trust synthesis oracle --- web-grounded data, 6 dimensions, economic model |
+| VouchProtocol v4 | `0xCEfF3FD4375B1B3437f181BcB30d4b06F84b2E4C` (GenLayer Studio) | Core trust synthesis oracle --- web-grounded data, 6 dimensions, economic model |
 | Frontend | https://vouch.gudman.xyz | Live web application |
 
 ---
@@ -461,7 +448,7 @@ vouch-fun/
     deploy_trustgate.mjs       # TrustGate deployment
     agent_trust_demo.py        # Agent-to-agent trust verification demo
     test_vouch_v3.mjs          # Contract integration tests
-  tests/                       # 194 tests: helpers, schema validation
+  tests/                       # 204 tests: helpers, schema validation
   docs/
     plans/                     # Design documents
     pitch.md                   # Hackathon submission pitch
@@ -481,7 +468,7 @@ npm run dev
 DEPLOY_KEY=0x... node scripts/deploy_v3.mjs
 DEPLOY_KEY=0x... VOUCH_ADDRESS=0x... node scripts/deploy_trustgate.mjs
 
-# Run tests (194 tests)
+# Run tests (204 tests)
 python -m pytest tests/ -v
 ```
 
