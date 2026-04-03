@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -51,13 +52,102 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function AgentDemo() {
+  const [searchParams] = useSearchParams();
+  const hireTarget = searchParams.get("hire") || "";
   const [scenario, setScenario] = useState(0);
   const [running, setRunning] = useState(false);
   const [steps, setSteps] = useState<Step[]>([]);
   const [results, setResults] = useState<{ handle: string; profile: TrustProfile | null; eligible: boolean; grade: string }[]>([]);
   const [done, setDone] = useState(false);
+  const [hireResult, setHireResult] = useState<{ handle: string; profile: TrustProfile | null; eligible: boolean; grade: string } | null>(null);
+  const [hireRunning, setHireRunning] = useState(false);
+  const [hireDone, setHireDone] = useState(false);
+  const [hireSteps, setHireSteps] = useState<Step[]>([]);
 
   const sc = SCENARIOS[scenario];
+
+  // Auto-run hire verification when arriving from marketplace
+  useEffect(() => {
+    if (hireTarget && !hireRunning && !hireDone) {
+      runHireCheck(hireTarget);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hireTarget]);
+
+  const updateHireStep = (id: string, updates: Partial<Step>) => {
+    setHireSteps((prev) => prev.map((s) => (s.id === id ? { ...s, ...updates } : s)));
+  };
+
+  const runHireCheck = async (handle: string) => {
+    setHireRunning(true);
+    setHireDone(false);
+    setHireResult(null);
+
+    const initialSteps: Step[] = [
+      { id: "lookup", label: `Looking up trust profile for ${handle}`, status: "pending" },
+      { id: "verify-code", label: "Checking code dimension", status: "pending" },
+      { id: "verify-overall", label: "Checking overall trust tier", status: "pending" },
+      { id: "decision", label: "Making hire decision", status: "pending" },
+    ];
+    setHireSteps(initialSteps);
+
+    // Step 1: Lookup profile
+    updateHireStep("lookup", { status: "running", detail: "Querying on-chain trust oracle..." });
+    await sleep(400);
+
+    let profile: TrustProfile | null = null;
+    try {
+      profile = await readProfileByHandle(handle);
+    } catch {}
+
+    if (!profile) {
+      updateHireStep("lookup", { status: "fail", detail: "No profile found on-chain" });
+      updateHireStep("verify-code", { status: "fail", detail: "Skipped" });
+      updateHireStep("verify-overall", { status: "fail", detail: "Skipped" });
+      updateHireStep("decision", { status: "fail", detail: `${handle} has no trust profile. Cannot hire.` });
+      setHireResult({ handle, profile: null, eligible: false, grade: "?" });
+      setHireDone(true);
+      setHireRunning(false);
+      return;
+    }
+
+    updateHireStep("lookup", { status: "pass", detail: `Score: ${profile.overall.trust_score}, Tier: ${profile.overall.trust_tier}` });
+
+    // Step 2: Code check
+    await sleep(300);
+    updateHireStep("verify-code", { status: "running" });
+    let codeResult: any = { pass: false, grade: "?" };
+    try {
+      codeResult = await trustQuery(handle, "code", "B");
+    } catch {}
+    const codeGrade = codeResult?.grade ?? profile.code?.grade ?? "?";
+    updateHireStep("verify-code", {
+      status: codeResult?.pass ? "pass" : "fail",
+      detail: `code=${codeGrade} ${codeResult?.pass ? ">= B" : "< B"}`,
+    });
+
+    // Step 3: Overall tier
+    await sleep(200);
+    const tierPass = profile.overall.trust_tier === "TRUSTED";
+    updateHireStep("verify-overall", {
+      status: tierPass ? "pass" : "fail",
+      detail: `Tier: ${profile.overall.trust_tier} ${tierPass ? "(TRUSTED)" : "(need TRUSTED)"}`,
+    });
+
+    // Step 4: Decision
+    await sleep(300);
+    const eligible = tierPass && (codeResult?.pass ?? false);
+    updateHireStep("decision", {
+      status: eligible ? "pass" : "fail",
+      detail: eligible
+        ? `APPROVED: ${handle} is qualified. Ready to hire.`
+        : `REJECTED: ${handle} does not meet minimum requirements.`,
+    });
+
+    setHireResult({ handle, profile, eligible, grade: codeGrade });
+    setHireDone(true);
+    setHireRunning(false);
+  };
 
   const updateStep = (id: string, updates: Partial<Step>) => {
     setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, ...updates } : s)));
@@ -144,6 +234,80 @@ export default function AgentDemo() {
             Every check hits the live contract on-chain.
           </p>
         </div>
+
+        {/* Hire verification panel — shown when arriving from marketplace */}
+        {hireTarget && (
+          <div className="mb-10">
+            <div className="glass rounded-2xl p-6 border border-indigo-500/20">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">Hire Verification: {hireTarget}</h2>
+                  <p className="text-sm text-gray-400">Running trust checks before hire approval</p>
+                </div>
+              </div>
+
+              {hireSteps.length > 0 && (
+                <div className="rounded-xl overflow-hidden border border-white/[0.06] mb-4">
+                  <div className="px-4 py-2 border-b border-white/[0.06] flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${hireRunning ? "bg-indigo-400 animate-pulse" : hireDone ? "bg-emerald-400" : "bg-gray-600"}`} />
+                    <span className="text-xs font-mono text-gray-400">
+                      {hireRunning ? "Verifying..." : hireDone ? "Complete" : "Ready"}
+                    </span>
+                  </div>
+                  <div className="divide-y divide-white/[0.04]">
+                    {hireSteps.map((step) => (
+                      <div key={step.id} className="px-4 py-2.5 flex items-start gap-3">
+                        <span className={`font-mono text-base mt-0.5 ${STATUS_COLOR[step.status]}`}>
+                          {STATUS_ICON[step.status]}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm text-white">{step.label}</div>
+                          {step.detail && (
+                            <div className="text-xs font-mono text-gray-500 mt-0.5">{step.detail}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {hireDone && hireResult && (
+                <div className={`rounded-xl p-4 ${hireResult.eligible ? "bg-emerald-500/10 border border-emerald-500/30" : "bg-red-500/5 border border-red-500/20"}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-mono font-bold text-white text-lg">{hireResult.handle}</span>
+                      {hireResult.profile && (
+                        <span className="ml-3 text-sm text-gray-400">
+                          Score: {hireResult.profile.overall.trust_score} / {hireResult.profile.overall.trust_tier}
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-sm px-3 py-1 rounded-full font-mono font-bold ${
+                      hireResult.eligible
+                        ? "bg-emerald-500/20 text-emerald-400"
+                        : "bg-red-500/15 text-red-400"
+                    }`}>
+                      {hireResult.eligible ? "APPROVED" : "NOT QUALIFIED"}
+                    </span>
+                  </div>
+                  {hireResult.profile?.overall.summary && (
+                    <p className="text-sm text-gray-400 mt-2">{hireResult.profile.overall.summary}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="text-center mt-4">
+              <p className="text-xs text-gray-600 font-mono">Or try a pre-built scenario below</p>
+            </div>
+          </div>
+        )}
 
         {/* Scenario selector */}
         <div className="flex flex-wrap gap-3 justify-center mb-8">

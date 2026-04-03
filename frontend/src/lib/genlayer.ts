@@ -168,8 +168,8 @@ export async function readTrustTier(address: string): Promise<string> {
 }
 
 // Query fee in wei — must match contract QUERY_FEE constant
-export const QUERY_FEE = 0n;
-export const MIN_STAKE = 0n;
+export const QUERY_FEE = 1000n;
+export const MIN_STAKE = 5000n;
 
 export async function generateProfile(handle: string, walletAddress: string = ""): Promise<any> {
   const args: string[] = walletAddress ? [handle, walletAddress] : [handle];
@@ -177,7 +177,7 @@ export async function generateProfile(handle: string, walletAddress: string = ""
     address: contractAddress,
     functionName: "vouch",
     args,
-    value: 0n,
+    value: QUERY_FEE,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
 }
@@ -188,17 +188,17 @@ export async function refreshProfile(handle: string, walletAddress: string = "")
     address: contractAddress,
     functionName: "refresh",
     args,
-    value: 0n,
+    value: QUERY_FEE,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
 }
 
-export async function stakeVouch(identifier: string, dimension: string, grade: string, _amount?: bigint): Promise<any> {
+export async function stakeVouch(identifier: string, dimension: string, grade: string, amount?: bigint): Promise<any> {
   const txHash = await client.writeContract({
     address: contractAddress,
     functionName: "stake_vouch",
     args: [identifier, dimension, grade],
-    value: 0n,
+    value: amount ?? MIN_STAKE,
     leaderOnly: false,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
@@ -266,7 +266,7 @@ export async function disputeProfile(handle: string, reason: string): Promise<an
     address: contractAddress,
     functionName: "dispute",
     args: [handle, reason],
-    value: 0n,
+    value: QUERY_FEE,
     leaderOnly: false,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
@@ -277,7 +277,7 @@ export async function compareProfiles(handleA: string, handleB: string): Promise
     address: contractAddress,
     functionName: "compare",
     args: [handleA, handleB],
-    value: 0n,
+    value: QUERY_FEE,
     leaderOnly: false,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });

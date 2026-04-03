@@ -5,18 +5,9 @@ import re
 import time
 
 _DM = "code,onchain,social,governance,defi,identity"
-QUERY_FEE = 0  # wei — zero for demo, nonzero in production
-MIN_STAKE = 0  # wei — zero for demo
+QUERY_FEE = 1000   # wei — micro-fee to prevent spam
+MIN_STAKE = 5000   # wei — skin-in-the-game for stake vouches
 PROFILE_TTL = 7776000  # 90 days in seconds — profiles decay after this
-
-# Known figures — provide factual context to help AI evaluation accuracy
-_KNOWN = {
-    "samczsun": "Context: samczsun is a well-known blockchain security researcher at Paradigm. Known for whitehat rescue operations and security tooling. Has a significant Twitter following and active GitHub presence.",
-    "gakonst": "Context: gakonst (Georgios Konstantopoulos) is CTO of Paradigm. Creator of Foundry (Solidity dev framework) and ethers-rs (Rust Ethereum library). Active open-source contributor.",
-    "haydenzadams": "Context: Hayden Adams is the creator of Uniswap, a major decentralized exchange protocol. Pioneer of automated market makers.",
-    "staborosch": "Context: Stani Kulechov is the founder of Aave, a major DeFi lending protocol. Active in DeFi governance.",
-    "transmissions11": "Context: t11s (transmissions11) is a Solidity developer at Paradigm. Creator of Solmate, a gas-optimized Solidity library.",
-}
 
 def _dt(s):
     s = s.strip()
@@ -188,9 +179,7 @@ class VouchProtocol(gl.Contract):
 
         the_ident = ident
         the_idt = idt
-        # Inject known-figure context
-        known_ctx = _KNOWN.get(ident, "")
-        extra = (known_ctx + "\n" + prompt_extra) if known_ctx else prompt_extra
+        extra = prompt_extra
 
         _evidence_found = [False]  # mutable to allow nonlocal update from _run
         _sources_hit = []  # track which sources returned data

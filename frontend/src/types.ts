@@ -101,11 +101,13 @@ export interface TrustBatchResult {
 }
 
 export interface ProfileAge {
-  exists: boolean;
+  exists?: boolean;
   handle?: string;
   age_days?: number;
   age_seconds?: number;
   fresh?: boolean;
+  ttl_seconds?: number;
+  updated_at?: number;
 }
 
 export interface DecayInfo {

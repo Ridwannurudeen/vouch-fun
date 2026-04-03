@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { hasFundedAccount, chainName } from "../lib/genlayer";
+
 export default function Header() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
@@ -21,7 +23,7 @@ export default function Header() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex gap-6 text-sm">
+        <nav className="hidden md:flex items-center gap-6 text-sm">
           <Link to="/" className={linkClass("/")}>Search</Link>
           <Link to="/explore" className={linkClass("/explore")}>Explore</Link>
           <Link to="/agents" className={`${linkClass("/agents")} !text-indigo-400`}>Agents</Link>
@@ -29,6 +31,12 @@ export default function Header() {
           <Link to="/gates" className={linkClass("/gates")}>Gates</Link>
           <Link to="/how-it-works" className={linkClass("/how-it-works")}>How It Works</Link>
           <Link to="/integrate" className={linkClass("/integrate")}>Integrate</Link>
+
+          {/* Wallet status */}
+          <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-white/10">
+            <span className={`w-2 h-2 rounded-full ${hasFundedAccount ? "bg-green-400" : "bg-red-400"}`} />
+            <span className="text-[10px] font-mono text-gray-500">{chainName}</span>
+          </div>
         </nav>
 
         {/* Mobile hamburger */}
@@ -57,6 +65,10 @@ export default function Header() {
           <Link to="/gates" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/gates")}`}>Gates</Link>
           <Link to="/how-it-works" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/how-it-works")}`}>How It Works</Link>
           <Link to="/integrate" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/integrate")}`}>Integrate</Link>
+          <div className="flex items-center gap-1.5 pt-2 border-t border-white/10">
+            <span className={`w-2 h-2 rounded-full ${hasFundedAccount ? "bg-green-400" : "bg-red-400"}`} />
+            <span className="text-[10px] font-mono text-gray-500">{chainName}</span>
+          </div>
         </nav>
       )}
     </header>

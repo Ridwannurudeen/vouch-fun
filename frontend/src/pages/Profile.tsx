@@ -115,7 +115,7 @@ function getDimensionEvidenceSources(profile: TrustProfile, dimension: Dimension
 }
 
 function formatProfileAge(profileAge: ProfileAge | null) {
-  if (!profileAge?.exists) return "No timestamp";
+  if (!profileAge || (!profileAge.exists && profileAge.age_seconds == null)) return "No timestamp";
   const seconds = profileAge.age_seconds ?? 0;
   if (seconds < 3600) {
     const mins = Math.max(1, Math.round(seconds / 60));
@@ -130,7 +130,7 @@ function formatProfileAge(profileAge: ProfileAge | null) {
 }
 
 function getFreshnessMeta(profileAge: ProfileAge | null) {
-  if (!profileAge?.exists) {
+  if (!profileAge || (!profileAge.exists && profileAge.age_seconds == null)) {
     return {
       label: "Unknown",
       style: "bg-gray-500/15 text-gray-400 border-gray-500/20",
