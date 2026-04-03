@@ -196,7 +196,7 @@ bid("0", "I'll audit with formal verification")  # Contract enforces grade check
 ```python
 from vouch import VouchClient
 
-client = VouchClient("0xbC20d8c9A1C6ff966508f1777aeF8ef05661E847")
+client = VouchClient("0x1f63816a7571cBbA67694073b658a04C38FF19d3")
 
 # Simple checks
 if client.is_trusted(addr): proceed()
@@ -389,7 +389,7 @@ Every profile stores its provenance:
 
 | Contract | Address | Description |
 |----------|---------|-------------|
-| VouchProtocol v4 | `0xbC20d8c9A1C6ff966508f1777aeF8ef05661E847` (GenLayer Studio) | Core trust synthesis oracle --- web-grounded data, 6 dimensions, economic model |
+| VouchProtocol v4 | `0x1f63816a7571cBbA67694073b658a04C38FF19d3` (GenLayer Studio) | Core trust synthesis oracle --- web-grounded data, 6 dimensions, economic model |
 | Frontend | https://vouch.gudman.xyz | Live web application |
 
 ---

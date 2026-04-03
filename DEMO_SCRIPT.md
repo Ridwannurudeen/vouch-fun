@@ -14,7 +14,7 @@
 - Scroll to show: hero section + stats bar
 
 **Voiceover:**
-"Welcome to vouch.fun — a composable trust synthesis protocol. We evaluate every user across 6 dimensions of reputation: code quality, on-chain activity, social presence, DeFi history, governance, and identity."
+"Welcome to vouch.fun — a composable trust synthesis protocol. We pull live data from 7 sources — GitHub, npm, Etherscan, Farcaster, Lens, Tally, and DefiLlama — and evaluate every user across 6 dimensions of reputation: code quality, on-chain activity, social presence, DeFi history, governance, and identity."
 
 **Text Overlay:**
 "5 AI validators reach consensus on every evaluation"
@@ -35,10 +35,10 @@
 - Observe the full profile card with 6-dimension radar chart
 
 **Voiceover:**
-"Here we search for samczsun, a legendary security researcher. Watch as GenLayer fetches live data from GitHub and Etherscan, then evaluates him against all six trust dimensions in real time."
+"Here we search for samczsun, a legendary security researcher. Watch as GenLayer fetches live data from 7 sources — GitHub, npm, Etherscan, Farcaster, Lens, Tally, and DefiLlama — then evaluates him against all six trust dimensions in real time."
 
 **Text Overlay:**
-"Live web data — GitHub API, Etherscan — not cached or hardcoded"
+"7 live data sources — GitHub, npm, Etherscan, Farcaster, Lens, Tally, DefiLlama — not cached or hardcoded"
 
 **Visual Notes:**
 - Profile shows: samczsun header with score (e.g., 95)
@@ -212,7 +212,7 @@
 - Show dispute/challenge section (if available)
 
 **Voiceover:**
-"Clicking any profile opens the full detail view. You see the radar chart overlaying all six dimensions, detailed scores for each, supporting data from GitHub and block explorers, and a live timestamp showing when the profile was last evaluated."
+"Clicking any profile opens the full detail view. You see the radar chart overlaying all six dimensions, detailed scores for each, supporting data from all 7 sources — GitHub, npm, Etherscan, Farcaster, Lens, Tally, and DefiLlama — and a live timestamp showing when the profile was last evaluated."
 
 **Text Overlay:**
 "6-dimension radar. Live data. AI-graded evidence."
@@ -275,7 +275,7 @@
 ## Key Talking Points (for Natural Flow)
 
 1. **Consensus**: Always mention "5 validators reach consensus" when showing results
-2. **Live Data**: Emphasize "GitHub API, Etherscan" — not hardcoded
+2. **Live Data**: Emphasize "7 live sources — GitHub, npm, Etherscan, Farcaster, Lens, Tally, DefiLlama" — not hardcoded
 3. **Composability**: Highlight that dimensions can be mixed/matched in new gates
 4. **GenLayer Unique**: Point out "only GenLayer can do this" — web data fetching + AI consensus
 5. **On-Chain Verification**: Gates execute on-chain, decisions are immutable

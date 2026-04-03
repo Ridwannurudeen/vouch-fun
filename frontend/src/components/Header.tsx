@@ -24,6 +24,7 @@ export default function Header() {
         <nav className="hidden md:flex gap-6 text-sm">
           <Link to="/" className={linkClass("/")}>Search</Link>
           <Link to="/explore" className={linkClass("/explore")}>Explore</Link>
+          <Link to="/agents" className={`${linkClass("/agents")} !text-indigo-400`}>Agents</Link>
           <Link to="/compare" className={linkClass("/compare")}>Compare</Link>
           <Link to="/gates" className={linkClass("/gates")}>Gates</Link>
           <Link to="/how-it-works" className={linkClass("/how-it-works")}>How It Works</Link>
@@ -51,6 +52,7 @@ export default function Header() {
         <nav className="md:hidden border-t border-glass-border px-4 pb-4 flex flex-col gap-3 text-sm bg-void/95 backdrop-blur-md">
           <Link to="/" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/")}`}>Search</Link>
           <Link to="/explore" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/explore")}`}>Explore</Link>
+          <Link to="/agents" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/agents")}`}>Agents</Link>
           <Link to="/compare" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/compare")}`}>Compare</Link>
           <Link to="/gates" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/gates")}`}>Gates</Link>
           <Link to="/how-it-works" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/how-it-works")}`}>How It Works</Link>

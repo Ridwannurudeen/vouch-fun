@@ -517,11 +517,11 @@ function VouchYourself() {
   const handleVouch = async (e: React.FormEvent) => {
     e.preventDefault();
     let trimmed = handle.trim();
-    // Strip GitHub/Twitter URL prefixes — users paste full URLs
+    // Strip URL prefixes — users paste full URLs
     trimmed = trimmed.replace(/^https?:\/\/(www\.)?github\.com\//i, "");
-    trimmed = trimmed.replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, "");
+    trimmed = trimmed.replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, "@"); // keep @ for twitter detection
     trimmed = trimmed.replace(/\/$/, ""); // trailing slash
-    if (!trimmed) return;
+    if (!trimmed || trimmed === "@") return;
     setPhase("generating");
     setError("");
     setSlow(false);
@@ -683,7 +683,7 @@ function VouchYourself() {
                   <input
                     value={handle}
                     onChange={(e) => setHandle(e.target.value)}
-                    placeholder="Your GitHub handle"
+                    placeholder="GitHub, @twitter, 0x wallet, or name.eth"
                     className="w-full bg-transparent text-white placeholder-white/20 pl-5 pr-4 py-4 text-base font-mono outline-none glass rounded-xl border border-white/[.06] focus:border-indigo-500/40 transition-colors"
                   />
                 </div>
