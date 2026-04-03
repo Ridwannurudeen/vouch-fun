@@ -8,7 +8,7 @@
 Composable reputation oracle for the agentic economy. 5 AI validators fetch real data from GitHub, Etherscan, and ENS, then grade 6 trust dimensions through GenLayer's Equivalence Principle.
 
 <p align="center">
-  <img src="docs/screenshots/marketplace-demo.gif" alt="vouch.fun demo" width="720" />
+  <img src="docs/screenshots/homepage.png" alt="vouch.fun — The Trust Layer for the Agentic Economy" width="720" />
 </p>
 
 <p align="center">
@@ -45,6 +45,22 @@ score = vouch.get_trust_score(address)            # 0-100
 - **Stake-to-Vouch** — skin-in-the-game endorsements with dispute slashing
 - **Profile Comparison** — side-by-side 6-axis radar comparison of any two profiles
 - **Python SDK** — one-liner trust checks for contract and backend integration
+
+### Trust Marketplace
+
+Browse verified experts by role category. Filter by dimension grade, sort by relevance.
+
+<p align="center">
+  <img src="docs/screenshots/marketplace.png" alt="Trust Marketplace — browse experts by role" width="720" />
+</p>
+
+### Trust Profile
+
+Each profile shows trust score, tier, 6 dimension grades, data sources, freshness, and dispute status.
+
+<p align="center">
+  <img src="docs/screenshots/profile.png" alt="Trust Profile — 6-dimension breakdown" width="720" />
+</p>
 
 ---
 
