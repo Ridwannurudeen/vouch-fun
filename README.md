@@ -1,32 +1,50 @@
-# vouch.fun --- Composable Trust Synthesis for the Agentic Economy
+# vouch.fun
 
-5 independent AI validators fetch real data from GitHub, Etherscan, and ENS, then grade 6 trust dimensions through GenLayer's Equivalence Principle. Evidence-grounded. Stake-backed. Composable on-chain.
+[![CI](https://github.com/Ridwannurudeen/vouch-fun/actions/workflows/ci.yml/badge.svg)](https://github.com/Ridwannurudeen/vouch-fun/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Live](https://img.shields.io/badge/Live-vouch.gudman.xyz-brightgreen)](https://vouch.gudman.xyz)
+[![GenLayer](https://img.shields.io/badge/Built%20on-GenLayer%20Bradbury-purple)](https://genlayer.com)
+
+Composable reputation oracle for the agentic economy. 5 AI validators fetch real data from GitHub, Etherscan, and ENS, then grade 6 trust dimensions through GenLayer's Equivalence Principle.
 
 <p align="center">
-  <a href="https://vouch.gudman.xyz"><strong>Try it live</strong></a> · <a href="https://vouch.gudman.xyz/explore?view=marketplace">Marketplace</a> · <a href="https://vouch.gudman.xyz/explore?view=marketplace">Explore</a> · <a href="docs/API_REFERENCE.md">API Reference</a>
+  <img src="docs/screenshots/marketplace-demo.gif" alt="vouch.fun demo" width="720" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/marketplace-demo.gif" alt="vouch.fun Marketplace Demo" width="720" />
+  <a href="https://vouch.gudman.xyz"><strong>Live App</strong></a> &middot;
+  <a href="https://vouch.gudman.xyz/explore?view=marketplace">Marketplace</a> &middot;
+  <a href="docs/API_REFERENCE.md">API Docs</a>
 </p>
 
 ---
 
-## What It Does
+## Problem
 
-An agent needs to answer **"Can I trust this entity?"** before hiring, lending, or delegating. That question has no good answer today --- trust is binary (KYC or nothing) and siloed (GitHub doesn't talk to on-chain doesn't talk to social).
+An agent needs to answer **"Can I trust this entity?"** before hiring, lending, or delegating. Today trust is binary (KYC or nothing) and siloed — GitHub doesn't talk to on-chain doesn't talk to social. There's no composable, machine-readable reputation layer for smart contracts to query.
 
-vouch.fun is the trust layer that agents and contracts query before acting:
+## Solution
+
+vouch.fun synthesizes a 6-dimension trust profile from scattered web2/web3 signals, stores it on-chain, and exposes it as a composable oracle any contract can query:
 
 ```python
-tier = vouch.get_trust_tier(address)           # "TRUSTED" / "MODERATE" / "LOW" / "UNKNOWN"
-dim  = vouch.get_dimension(address, "code")    # {"grade": "A", "confidence": "high", ...}
-score = vouch.get_trust_score(address)          # 0-100
+tier  = vouch.get_trust_tier(address)            # "TRUSTED" / "MODERATE" / "LOW"
+grade = vouch.get_dimension(address, "code")     # {"grade": "A", "confidence": "high", ...}
+score = vouch.get_trust_score(address)            # 0-100
 ```
 
-- **Agent hires auditor** --- `get_dimension(addr, "code")` returns grade + confidence. Only B+ gets the contract.
-- **Protocol gates access** --- `get_dimension(addr, "defi")` checks DeFi experience before allowing large swaps.
-- **DAO weights votes** --- `get_dimension(addr, "governance")` scales voting power by participation history.
+---
+
+## Features
+
+- **6-Dimension Trust Scoring** — Code, On-Chain, Social, Governance, DeFi, Identity
+- **AI Consensus** — 5 independent validators grade each dimension via Equivalence Principle
+- **Trust Marketplace** — browse verified experts by role, filter by dimension grade
+- **TrustGate Composability** — any contract gates actions on specific trust dimensions
+- **Trust Oracle API** — `trust_query()` and `trust_batch_query()` for protocol integrations
+- **Stake-to-Vouch** — skin-in-the-game endorsements with dispute slashing
+- **Profile Comparison** — side-by-side 6-axis radar comparison of any two profiles
+- **Python SDK** — one-liner trust checks for contract and backend integration
 
 ---
 
@@ -36,133 +54,12 @@ score = vouch.get_trust_score(address)          # 0-100
 |-----------|-----|-------------------|
 | Code Activity | `code` | Repos, commits, languages, stars, OSS impact |
 | On-Chain Activity | `onchain` | Tx history, account age, contracts deployed |
-| Social Presence | `social` | Twitter/X influence, content quality, thought leadership |
+| Social Presence | `social` | Twitter/X influence, content quality, reach |
 | Governance | `governance` | DAO participation, proposals, voting history |
 | DeFi Behavior | `defi` | Protocol interactions, LP history, risk appetite |
 | Identity | `identity` | ENS, Lens, Farcaster, cross-platform linkage |
 
-Each dimension returns a grade (A--F), confidence (high/medium/low/none), reasoning, and key signals.
-
----
-
-## Trust Marketplace
-
-Category browsing, featured experts, rich profile cards with role tags, signal evidence, confidence summaries, and a clear hiring flow.
-
-<p align="center">
-  <img src="docs/screenshots/marketplace.png" alt="Trust Marketplace" width="720" />
-</p>
-
-- **6 role categories** --- Security, Developer, DeFi, Governance, Social, On-Chain --- click to filter
-- **Featured experts** --- top 3 by trust score, highlighted with accent styling
-- **Rich cards** --- all roles as colored tags, top 3 key signals, strongest dimension bar, data source dots, confidence summary
-- **Role-aware sorting** --- filtering by "Security Expert" sorts by code grade first
-- **Marketplace stats** --- verified experts, unique roles, avg trust score, total sources verified
-- **How Hiring Works** --- 3-step discover/verify/hire flow at page bottom
-
----
-
-## How It Works
-
-```
-1. Submit any identifier: GitHub handle, ENS name, wallet address, or @twitter handle
-2. Contract auto-detects type and builds evaluation prompt for 6 dimensions
-3. Validators fetch REAL data via gl.nondet.web.render() (GitHub API, Etherscan, ENS)
-4. 5 independent validators each grade the fetched data via gl.nondet.exec_prompt()
-5. Equivalence Principle consensus --- validators agree on "equivalent" evaluations, not identical
-6. Profile stored on-chain as JSON. Query fee (1000 wei) added to fee pool.
-7. Any contract queries specific dimensions. Disputes trigger re-evaluation with fresh data.
-```
-
----
-
-## Composability
-
-Any GenLayer contract gates actions on specific trust dimensions with one cross-contract call:
-
-```python
-# TrustGate --- dimension-gated registration
-grade = vouch.get_dimension(caller, "code")
-if grade < min_grade: raise Exception("Insufficient trust")
-
-# TrustLending --- borrow limits by trust score
-score = vouch.get_trust_score(caller)   # TRUSTED: 10K @ 2% | MODERATE: 5K @ 5%
-
-# AgentMarketplace --- trust-gated hiring
-post_job("Audit my contract", "Full audit", "code", "B")  # Only B+ can bid
-```
-
-3 consumer contracts deployed: **TrustGate**, **TrustLending**, **AgentMarketplace**.
-
-Python SDK for one-line integration:
-
-```python
-from vouch import VouchClient
-client = VouchClient("0xCEfF3FD4375B1B3437f181BcB30d4b06F84b2E4C")
-if client.is_trusted(addr): proceed()
-if client.meets_threshold(addr, "code", "B"): hire()
-```
-
-Full API reference: [docs/API_REFERENCE.md](docs/API_REFERENCE.md)
-
----
-
-## Why Only GenLayer
-
-| Requirement | Ethereum + Chainlink | GenLayer |
-|------------|---------------------|----------|
-| Independent AI evaluation | 1 LLM, 1 result, no check | 5 validators, outlier filtering |
-| Subjective consensus | Impossible (deterministic) | Equivalence Principle |
-| Native composability | Oracle adapter contracts | `gl.ContractAt()` direct calls |
-| Dispute resolution | Custom implementation | Built-in optimistic democracy |
-
-vouch.fun requires AI-native consensus with subjective agreement and native composability --- features that exist on GenLayer and literally nowhere else.
-
----
-
-## Competitive Landscape
-
-| Protocol | Dimensions | Output | On-Chain | AI Consensus | Confidence |
-|----------|-----------|--------|----------|--------------|------------|
-| Gitcoin Passport | 1 | Boolean | Limited | No | No |
-| DegenScore | 1 | Score | No | No | No |
-| Worldcoin | 1 | Boolean | No | No | No |
-| **vouch.fun** | **6** | **Graded + reasoned** | **Any contract** | **5 validators** | **Yes** |
-
----
-
-## Economics
-
-| Mechanism | Amount | Purpose |
-|-----------|--------|---------|
-| Query Fee | 1000 wei per vouch/refresh | Protocol revenue |
-| Stake-to-Vouch | 5000 wei minimum | Skin-in-the-game endorsement |
-| Dispute Slashing | Staked amount | Wrong stakers lose their stake |
-
-Profiles expire after 90 days --- `refresh()` creates recurring transaction revenue. Full economics: [docs/API_REFERENCE.md](docs/API_REFERENCE.md)
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Contracts | Python Intelligent Contracts on GenLayer Bradbury |
-| Consensus | Optimistic Democracy with `prompt_comparative` equivalence |
-| AI Evaluation | `gl.nondet.exec_prompt()` --- 5 independent validators |
-| Web Data | `gl.nondet.web.render()` --- GitHub API, Etherscan, ENS |
-| Frontend | React 19 + TypeScript + Vite + Tailwind CSS 4 |
-| Visualization | Recharts (6-axis radar) + Framer Motion |
-| SDK | genlayer-js 0.28.2 |
-
----
-
-## Deployed
-
-| Contract | Address |
-|----------|---------|
-| VouchProtocol v4 | `0xCEfF3FD4375B1B3437f181BcB30d4b06F84b2E4C` (Bradbury testnet) |
-| Frontend | https://vouch.gudman.xyz |
+Each dimension returns a **grade** (A–F), **confidence** (high/medium/low), **reasoning**, and **key signals**.
 
 ---
 
@@ -188,51 +85,187 @@ Profiles expire after 90 days --- `refresh()` creates recurring transaction reve
 
 ---
 
-## Project Structure
+## Getting Started
 
-```
-vouch-fun/
-  contracts/
-    vouch_protocol.py          # Core: 6-dimension AI trust synthesis
-    trust_gate.py              # Consumer: dimension-gated registration
-    trust_lending.py           # Consumer: borrow limits by trust score
-    agent_marketplace.py       # Consumer: trust-gated agent hiring
-  sdk/
-    vouch.py                   # Python SDK: VouchClient one-liner
-  frontend/src/
-    pages/
-      Home.tsx                 # Landing: vouch-yourself flow, radar visualization
-      Explore.tsx              # Marketplace: category cards, featured experts, rich filtering
-      Profile.tsx              # 6-axis radar, confidence badges, dispute flow
-      Compare.tsx              # Side-by-side 6-axis comparison
-    components/                # RadarChart, ProfileCard, TrustBadge, etc.
-  tests/                       # Schema validation + helper tests
-  docs/
-    API_REFERENCE.md           # Full contract API, SDK, economics
-```
+### Prerequisites
 
----
+- Node.js 18+
+- Python 3.10+ (for contract deployment and SDK)
+- A GenLayer Bradbury testnet account with GEN tokens
 
-## Local Development
+### Installation
 
 ```bash
-cd frontend && npm install
-cp .env.example .env  # set VITE_CONTRACT_ADDRESS
-npm run dev
+git clone https://github.com/Ridwannurudeen/vouch-fun.git
+cd vouch-fun
+```
 
-# Deploy contracts (requires Bradbury testnet key with GEN)
+### Frontend
+
+```bash
+cd frontend
+npm install
+cp .env.example .env    # set VITE_CONTRACT_ADDRESS
+npm run dev             # http://localhost:5173
+```
+
+### Deploy Contracts
+
+```bash
+# Requires Bradbury testnet private key with GEN
 DEPLOY_KEY=0x... node scripts/deploy_v3.mjs
+```
 
-# Tests
+### Run Tests
+
+```bash
 python -m pytest tests/ -v
 ```
 
 ---
 
+## Usage
+
+### Composable Trust Checks
+
+Any GenLayer contract can gate actions on specific trust dimensions:
+
+```python
+# Gate registration by code quality
+grade = vouch.get_dimension(caller, "code")
+if grade < min_grade:
+    raise Exception("Insufficient trust")
+
+# Scale borrow limits by trust score
+score = vouch.get_trust_score(caller)
+# TRUSTED: 10K @ 2% | MODERATE: 5K @ 5%
+
+# Trust-gated hiring
+post_job("Audit my contract", "Full audit", "code", "B")  # Only B+ can bid
+```
+
+### Python SDK
+
+```python
+from vouch import VouchClient
+
+client = VouchClient("0xCEfF3FD4375B1B3437f181BcB30d4b06F84b2E4C")
+if client.is_trusted(addr):
+    proceed()
+if client.meets_threshold(addr, "code", "B"):
+    hire()
+```
+
+Full API reference: [docs/API_REFERENCE.md](docs/API_REFERENCE.md)
+
+---
+
+## Project Structure
+
+```
+vouch-fun/
+├── contracts/
+│   ├── vouch_protocol.py        # Core: 6-dimension AI trust synthesis
+│   ├── trust_gate.py            # Consumer: dimension-gated registration
+│   ├── trust_lending.py         # Consumer: borrow limits by trust score
+│   └── agent_marketplace.py     # Consumer: trust-gated agent hiring
+├── sdk/
+│   └── vouch.py                 # Python SDK
+├── frontend/src/
+│   ├── pages/
+│   │   ├── Home.tsx             # Landing + vouch-yourself flow
+│   │   ├── Explore.tsx          # Marketplace + explore grid
+│   │   ├── Profile.tsx          # 6-axis radar, confidence, disputes
+│   │   └── Compare.tsx          # Side-by-side comparison
+│   ├── components/              # RadarChart, ProfileCard, ConsensusAnimation, etc.
+│   └── lib/
+│       └── genlayer.ts          # Contract client + cache layer
+├── scripts/                     # Deploy scripts
+├── tests/                       # Schema validation + helpers
+└── docs/
+    └── API_REFERENCE.md         # Full contract API + economics
+```
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Smart Contracts | Python Intelligent Contracts (GenLayer Bradbury) |
+| Consensus | Optimistic Democracy + Equivalence Principle |
+| AI Evaluation | `gl.nondet.exec_prompt()` — 5 independent validators |
+| Data Fetching | `gl.nondet.web.render()` — GitHub API, Etherscan, ENS |
+| Frontend | React 19 + TypeScript + Vite + Tailwind CSS 4 |
+| Visualization | Recharts (6-axis radar) + Framer Motion |
+| SDK | genlayer-js 0.28.2 |
+
+---
+
+## Deployed Contracts
+
+| Contract | Address | Network |
+|----------|---------|---------|
+| VouchProtocol v4 | `0xCEfF3FD4375B1B3437f181BcB30d4b06F84b2E4C` | Bradbury Testnet |
+
+---
+
+## Economics
+
+| Mechanism | Amount | Purpose |
+|-----------|--------|---------|
+| Query Fee | 1000 wei per vouch/refresh | Protocol revenue |
+| Stake-to-Vouch | 5000 wei minimum | Skin-in-the-game endorsement |
+| Dispute Slashing | Staked amount | Wrong stakers lose their stake |
+
+Profiles expire after 90 days — `refresh()` creates recurring revenue.
+
+---
+
+## Why GenLayer
+
+vouch.fun requires **subjective AI consensus** — 5 validators independently evaluating the same person must agree on "equivalent" assessments, not identical ones. This is impossible on deterministic chains and impractical with single-oracle setups.
+
+| Requirement | Traditional Chains | GenLayer |
+|------------|-------------------|----------|
+| Independent AI evaluation | 1 LLM, no verification | 5 validators, outlier filtering |
+| Subjective consensus | Impossible (deterministic) | Equivalence Principle |
+| Native composability | Oracle adapter contracts | `gl.ContractAt()` direct calls |
+| Dispute resolution | Custom implementation | Built-in optimistic democracy |
+
+---
+
+## Competitive Landscape
+
+| Protocol | Dimensions | Output | On-Chain Composable | AI Consensus |
+|----------|-----------|--------|---------------------|--------------|
+| Gitcoin Passport | 1 | Boolean | Limited | No |
+| DegenScore | 1 | Score | No | No |
+| Worldcoin | 1 | Boolean | No | No |
+| **vouch.fun** | **6** | **Graded + reasoned** | **Yes** | **5 validators** |
+
+---
+
 ## Roadmap
 
-**v4 (current)** --- Web-grounded trust synthesis, 3 consumer contracts, marketplace with category browsing + featured experts, Python SDK, stake-to-vouch economics
+- **v4 (current)** — 6-dimension trust synthesis, 3 consumer contracts, marketplace, Python SDK, stake-to-vouch
+- **v5** — 90-day profile decay + paid refresh loop (recurring revenue)
+- **v6** — GenLayer mainnet, vouch bonds, slashing, consumer contract ecosystem
 
-**v5** --- 90-day profile decay + paid refresh loop (recurring revenue engine)
+---
 
-**v6** --- GenLayer mainnet, explicit vouch bonds, slashing for disputed vouches, consumer contract ecosystem
+## Contributing
+
+Contributions are welcome. Please open an issue first to discuss what you'd like to change.
+
+1. Fork the repository
+2. Create your branch (`git checkout -b feat/your-feature`)
+3. Commit your changes
+4. Push to the branch (`git push origin feat/your-feature`)
+5. Open a Pull Request
+
+---
+
+## License
+
+[MIT](LICENSE)
