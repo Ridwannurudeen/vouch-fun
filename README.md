@@ -15,7 +15,7 @@ Composable reputation oracle for the agentic economy. 5 AI validators fetch real
   <a href="https://vouch.gudman.xyz"><strong>Live App</strong></a> &middot;
   <a href="https://vouch.gudman.xyz/explore?view=marketplace">Marketplace</a> &middot;
   <a href="docs/API_REFERENCE.md">API Docs</a> &middot;
-  <a href="https://youtube.com/shorts/LgTSocr6ekM">Demo Video</a>
+  <a href="https://youtu.be/CjzsmZBFlto">Demo Video</a>
 </p>
 
 ---
