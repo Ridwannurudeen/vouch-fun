@@ -6,9 +6,9 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
-  const linkClass = (path: string) =>
+  const linkClass = (path: string, search?: string) =>
     `transition-colors ${
-      location.pathname === path
+      location.pathname === path && (!search || location.search === search)
         ? "text-accent-bright"
         : "text-gray-400 hover:text-white"
     }`;
@@ -17,15 +17,16 @@ export default function Header() {
     <header className="border-b border-glass-border bg-void/80 backdrop-blur-md sticky top-0 z-40">
       <div className="mx-auto max-w-5xl px-4 py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
+          <img src="/favicon.svg" alt="vouch.fun" className="w-7 h-7" />
           <span className="text-xl font-bold text-white">vouch.fun</span>
-          <span className="text-xs text-gray-500 font-mono mt-1">Trust Synthesis</span>
           <span className="text-[10px] bg-accent/20 text-accent px-1.5 py-0.5 rounded-full font-mono mt-1">GenLayer</span>
         </Link>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-6 text-sm">
           <Link to="/" className={linkClass("/")}>Search</Link>
-          <Link to="/explore" className={linkClass("/explore")}>Explore</Link>
+          <Link to="/explore" className={linkClass("/explore", "")}>Explore</Link>
+          <Link to="/explore?view=marketplace" className={linkClass("/explore", "?view=marketplace")}>Marketplace</Link>
           <Link to="/agents" className={`${linkClass("/agents")} !text-indigo-400`}>Agents</Link>
           <Link to="/compare" className={linkClass("/compare")}>Compare</Link>
           <Link to="/gates" className={linkClass("/gates")}>Gates</Link>
@@ -59,7 +60,8 @@ export default function Header() {
       {open && (
         <nav className="md:hidden border-t border-glass-border px-4 pb-4 flex flex-col gap-3 text-sm bg-void/95 backdrop-blur-md">
           <Link to="/" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/")}`}>Search</Link>
-          <Link to="/explore" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/explore")}`}>Explore</Link>
+          <Link to="/explore" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/explore", "")}`}>Explore</Link>
+          <Link to="/explore?view=marketplace" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/explore", "?view=marketplace")}`}>Marketplace</Link>
           <Link to="/agents" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/agents")}`}>Agents</Link>
           <Link to="/compare" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/compare")}`}>Compare</Link>
           <Link to="/gates" onClick={() => setOpen(false)} className={`py-1 ${linkClass("/gates")}`}>Gates</Link>

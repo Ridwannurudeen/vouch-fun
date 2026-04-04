@@ -6,7 +6,7 @@ import time
 
 _DM = "code,onchain,social,governance,defi,identity"
 QUERY_FEE = 0      # wei — disabled on Studio (payable not supported)
-MIN_STAKE = 5000   # wei — skin-in-the-game for stake vouches
+MIN_STAKE = 0      # wei — disabled on Studio (payable not supported by GenVM v0.2.16)
 PROFILE_TTL = 7776000  # 90 days in seconds — profiles decay after this
 
 def _dt(s):

@@ -168,27 +168,30 @@ export async function readTrustTier(address: string): Promise<string> {
 }
 
 // Query fee in wei — must match contract QUERY_FEE constant
-export const QUERY_FEE = 1000n;
-export const MIN_STAKE = 5000n;
+// Set to 0 because GenVM v0.2.16 rejects value on non-payable methods
+export const QUERY_FEE = 0n;
+export const MIN_STAKE = 0n;
 
-export async function generateProfile(handle: string, walletAddress: string = ""): Promise<any> {
+export async function generateProfile(handle: string, walletAddress: string = "", leaderOnly: boolean = false): Promise<any> {
   const args: string[] = walletAddress ? [handle, walletAddress] : [handle];
   const txHash = await client.writeContract({
     address: contractAddress,
     functionName: "vouch",
     args,
     value: QUERY_FEE,
+    leaderOnly,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
 }
 
-export async function refreshProfile(handle: string, walletAddress: string = ""): Promise<any> {
+export async function refreshProfile(handle: string, walletAddress: string = "", leaderOnly: boolean = false): Promise<any> {
   const args: string[] = walletAddress ? [handle, walletAddress] : [handle];
   const txHash = await client.writeContract({
     address: contractAddress,
     functionName: "refresh",
     args,
     value: QUERY_FEE,
+    leaderOnly,
   });
   return client.waitForTransactionReceipt({ hash: txHash, retries: 120, interval: 5000 });
 }
@@ -227,7 +230,7 @@ export async function getFeePool(): Promise<FeePool> {
     const parsed = typeof result === "string" ? JSON.parse(result) : (result as any);
     if (parsed && typeof parsed.fee_pool === "number") return parsed;
   } catch {}
-  return { fee_pool: 0, query_fee: 1000, min_stake: 5000 };
+  return { fee_pool: 0, query_fee: 0, min_stake: 0 };
 }
 
 export async function getStats(): Promise<ProtocolStats> {

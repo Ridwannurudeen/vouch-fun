@@ -1038,7 +1038,7 @@ export default function Home() {
                   Skin in the <span className="gradient-text">Game</span>
                 </h2>
                 <p className="text-sm text-white/25 max-w-md mx-auto">
-                  Query fees fund the protocol. Stakes enforce honesty. Disputes slash bad actors.
+                  Fees are currently disabled. Stakes enforce honesty. Disputes slash bad actors.
                 </p>
               </div>
             </FadeIn>

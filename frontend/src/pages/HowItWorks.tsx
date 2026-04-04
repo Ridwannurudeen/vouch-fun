@@ -114,10 +114,10 @@ const STEPS: StepProps[] = [
     index: 4,
     title: "6-dimension profile stored on-chain",
     description:
-      "The consensus profile with grades, confidence levels, reasoning, and key signals for all 6 dimensions is stored on GenLayer. Query fees accumulate in the protocol fee pool.",
+      "The consensus profile with grades, confidence levels, reasoning, and key signals for all 6 dimensions is stored on GenLayer. Fees are currently disabled while GenVM matures.",
     icon: "\u{1F512}",
     detail:
-      '{ code: "A"(high), onchain: "F"(high), score: 48 } \u2192 on-chain | fee: 1000 wei \u2192 pool',
+      '{ code: "A"(high), onchain: "F"(high), score: 48 } \u2192 on-chain | fees disabled',
   },
   {
     index: 5,

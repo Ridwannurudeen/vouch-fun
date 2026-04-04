@@ -218,13 +218,18 @@ export default function Profile() {
   }, [profile]);
 
   const handleGenerate = async () => {
-    const target = cleanHandle(handle);
-    if (!target || isAddress) return;
+    const target = isAddress ? handle! : cleanHandle(handle);
+    if (!target) return;
     setGenerating(true);
     setError("");
     try {
-      await generateProfile(target);
-      const p = await readProfileByHandle(target);
+      try {
+        await generateProfile(target);
+      } catch {
+        // Consensus failed (status 6) — retry with leader only
+        await generateProfile(target, "", true);
+      }
+      const p = isAddress ? await readProfile(target) : await readProfileByHandle(target);
       if (p && p.overall) setProfile(p);
     } catch (err: any) {
       setError(err.message || "Failed to generate profile");
@@ -234,13 +239,17 @@ export default function Profile() {
   };
 
   const handleRefresh = async () => {
-    const target = cleanHandle(handle);
-    if (!target || isAddress) return;
+    const target = isAddress ? handle! : cleanHandle(handle);
+    if (!target) return;
     setGenerating(true);
     setError("");
     try {
-      await refreshProfile(target);
-      const p = await readProfileByHandle(target);
+      try {
+        await refreshProfile(target);
+      } catch {
+        await refreshProfile(target, "", true);
+      }
+      const p = isAddress ? await readProfile(target) : await readProfileByHandle(target);
       if (p && p.overall) setProfile(p);
     } catch (err: any) {
       setError(err.message || "Failed to refresh profile");
@@ -530,7 +539,7 @@ export default function Profile() {
                       Array.isArray(entries)
                         ? entries.map((s, i) => (
                             <span key={`${dim}-${i}`} className="text-xs bg-accent-dim text-accent px-2 py-1 rounded font-mono">
-                              {DIMENSION_LABELS[dim as DimensionKey] || dim}: {s.grade} ({s.amount} wei)
+                              {DIMENSION_LABELS[dim as DimensionKey] || dim}: {s.grade}{s.amount ? ` (${s.amount} wei)` : ""}
                             </span>
                           ))
                         : null
@@ -567,17 +576,17 @@ export default function Profile() {
             </div>
             <h2 className="text-lg font-semibold text-white mb-2">No profile found</h2>
             <p className="text-gray-400 max-w-md mx-auto mb-6">
-              Generate a fresh synthesized trust profile for this identifier to evaluate its six dimensions.
+              {isAddress
+                ? "Generate a trust profile for this wallet address using on-chain activity, DeFi positions, and governance participation."
+                : "Generate a fresh synthesized trust profile for this identifier to evaluate its six dimensions."}
             </p>
-            {!isAddress && (
-              <button
-                onClick={handleGenerate}
-                disabled={generating}
-                className="px-5 py-3 bg-accent text-white rounded-xl font-medium hover:bg-accent-bright transition-colors"
-              >
-                Generate Profile
-              </button>
-            )}
+            <button
+              onClick={handleGenerate}
+              disabled={generating}
+              className="px-5 py-3 bg-accent text-white rounded-xl font-medium hover:bg-accent-bright transition-colors"
+            >
+              Generate Profile
+            </button>
             {error && <p className="text-sm text-red-400 mt-4">{error}</p>}
           </div>
         )}
