@@ -229,13 +229,10 @@ vouch-fun/
 
 ## Economics
 
-| Mechanism | Amount | Purpose |
-|-----------|--------|---------|
-| Query Fee | 1000 wei per vouch/refresh | Protocol revenue |
-| Stake-to-Vouch | 5000 wei minimum | Skin-in-the-game endorsement |
-| Dispute Slashing | Staked amount | Wrong stakers lose their stake |
+Revenue model is milestone-based:
 
-Profiles expire after 90 days — `refresh()` creates recurring revenue.
+1. **Testnet (current):** Free queries (`QUERY_FEE = 0`) to encourage adoption. Stake-to-vouch at 5000 wei minimum for skin-in-the-game endorsements. Dispute slashing burns the staked amount.
+2. **Mainnet:** Query fees + 90-day profile expiry with paid `refresh()` for recurring revenue.
 
 ---
 

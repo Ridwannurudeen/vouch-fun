@@ -589,7 +589,12 @@ class VouchProtocol(gl.Contract):
     def get_profile(self, address: str) -> str:
         a = address.strip().lower()
         if not re.match(r'^0x[a-f0-9]{40}$', a): return "{}"
-        return self._gc(a) or "{}"
+        raw = self._gc(a)
+        if not raw:
+            handle = self._reverse_lookup(a)
+            if handle:
+                raw = self._gc(handle)
+        return raw or "{}"
 
     @gl.public.view
     def get_profile_by_handle(self, identifier: str) -> str:
@@ -737,6 +742,14 @@ class VouchProtocol(gl.Contract):
         profile = _pa(cached)
         dim_data = profile.get(dimension, {})
         grade = dim_data.get("grade", "F") if isinstance(dim_data, dict) else "F"
+        try:
+            p = json.loads(cached)
+            updated = p.get("updated_at", p.get("created_at", 0))
+        except Exception: updated = 0
+        age = int(time.time()) - updated if updated else 999999
+        if age > PROFILE_TTL:
+            decay = {"A": "B", "B": "C", "C": "D", "D": "F"}
+            grade = decay.get(grade, grade)
         ok = _gv(grade) >= _gv(min_grade)
         return json.dumps({"eligible": ok, "handle": h, "grade": grade, "required": min_grade, "dimension": dimension})
 
@@ -770,7 +783,6 @@ class VouchProtocol(gl.Contract):
         confidence = dim_data.get("confidence", "none") if isinstance(dim_data, dict) else "none"
         score = profile.get("overall", {}).get("trust_score", 0)
         tier = profile.get("overall", {}).get("trust_tier", "UNKNOWN")
-        ok = _gv(grade) >= _gv(min_grade)
         updated = 0
         try:
             p = json.loads(cached)
@@ -778,6 +790,10 @@ class VouchProtocol(gl.Contract):
         except Exception: pass
         age = int(time.time()) - updated if updated else -1
         fresh = age >= 0 and age <= PROFILE_TTL
+        if not fresh:
+            decay = {"A": "B", "B": "C", "C": "D", "D": "F"}
+            grade = decay.get(grade, grade)
+        ok = _gv(grade) >= _gv(min_grade)
         return json.dumps({
             "pass": ok, "handle": h, "dimension": dimension,
             "grade": grade, "confidence": confidence, "required": min_grade,

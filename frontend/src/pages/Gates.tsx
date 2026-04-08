@@ -55,11 +55,6 @@ export default function Gates() {
   const [ageHandle, setAgeHandle] = useState("");
   const [ageResult, setAgeResult] = useState<any>(null);
 
-  useEffect(() => {
-    loadGates();
-    getDecayInfo().then(setDecay);
-  }, []);
-
   async function loadGates() {
     setLoading(true);
     try {
@@ -73,6 +68,11 @@ export default function Gates() {
     }
     setLoading(false);
   }
+
+  useEffect(() => {
+    loadGates();
+    getDecayInfo().then(setDecay);
+  }, []);
 
   async function runOracleQuery() {
     if (!oracleHandle.trim()) return;

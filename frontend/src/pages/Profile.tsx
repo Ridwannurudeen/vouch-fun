@@ -18,6 +18,7 @@ import {
   getDecayInfo,
   hasFundedAccount,
   MIN_STAKE,
+  isUsingFallbackData,
 } from "../lib/genlayer";
 import type { TrustProfile, DimensionKey, ProfileAge, DecayInfo } from "../types";
 import { DIMENSIONS, DIMENSION_LABELS } from "../types";
@@ -332,6 +333,11 @@ export default function Profile() {
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold font-mono text-white mb-2">{profileId}</h1>
               <TrustBadge tier={profile.overall.trust_tier} />
+              {isUsingFallbackData ? (
+                <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20">Demo data</span>
+              ) : (
+                <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/20">On-chain</span>
+              )}
 
               {profile.overall.trust_score != null && (
                 <div className="mt-3">
