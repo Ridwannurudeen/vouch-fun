@@ -364,22 +364,33 @@ class VouchProtocol(gl.Contract):
         if "trust_evaluation" in g: g = g["trust_evaluation"]
 
         grade_scores = {"A": 90, "B": 75, "C": 55, "D": 35, "F": 10}
+        conf_weights = {"high": 1.0, "medium": 0.75, "low": 0.5, "none": 0.25}
         dims = _DM.split(",")
-        grades_found = []
+        dim_data = []
         profile = {}
         for d in dims:
-            val = g.get(d, "F")
-            if isinstance(val, dict): val = val.get("grade", "F")
+            raw = g.get(d, "F")
+            if isinstance(raw, dict):
+                val = raw.get("grade", "F")
+                llm_conf = raw.get("confidence", "")
+            else:
+                val = raw
+                llm_conf = ""
             grade = str(val).upper().strip()
             if grade not in ["A","B","C","D","F"]: grade = "F"
-            grades_found.append(grade)
-            conf = "high" if grade in ["A","B"] else "medium" if grade == "C" else "low" if grade == "D" else "none"
+            llm_conf = str(llm_conf).lower().strip()
+            if llm_conf in conf_weights:
+                conf = llm_conf
+            else:
+                conf = "high" if grade in ["A","B"] else "medium" if grade == "C" else "low" if grade == "D" else "none"
+            dim_data.append((grade, conf))
             profile[d] = {"grade": grade, "confidence": conf, "reasoning": f"AI-evaluated from live data"}
 
         try: score = max(0, min(100, int(g.get("score", -1))))
         except Exception: score = -1
         if score < 0:
-            score = int(sum(grade_scores.get(gr, 10) for gr in grades_found) / len(grades_found))
+            weights = [conf_weights[c] for _, c in dim_data]
+            score = int(sum(grade_scores.get(gr, 10) * w for (gr, _), w in zip(dim_data, weights)) / sum(weights))
 
         tier = str(g.get("tier", "")).upper().strip()
         if tier == "UNTRUSTED": tier = "UNKNOWN"

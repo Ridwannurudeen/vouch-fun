@@ -10,6 +10,8 @@ import { DIMENSIONS, DIMENSION_LABELS } from "../types";
 
 const RadarChart = lazy(() => import("../components/RadarChart"));
 
+const GRADE_RANK: Record<string, number> = { A: 5, B: 4, C: 3, D: 2, F: 1, "N/A": 0 };
+
 function ChartFallback() {
   return (
     <div className="h-[320px] flex items-center justify-center">
@@ -242,20 +244,33 @@ export default function Compare() {
                   {DIMENSIONS.map((dim: DimensionKey) => {
                     const dA = profileA[dim];
                     const dB = profileB[dim];
+                    const gradeA = dA?.grade || "N/A";
+                    const gradeB = dB?.grade || "N/A";
+                    const rankA = GRADE_RANK[gradeA] ?? 0;
+                    const rankB = GRADE_RANK[gradeB] ?? 0;
+                    const aWins = rankA > rankB;
+                    const bWins = rankB > rankA;
                     return (
                       <tr key={dim} className="border-b border-glass-border">
-                        <td className="px-4 py-3 text-gray-400 font-medium">{DIMENSION_LABELS[dim]}</td>
-                        <td className="px-4 py-3 text-center">
-                          <span className="font-mono font-bold text-white">{dA?.grade || "N/A"}</span>
+                        <td className="px-4 py-3 text-gray-400 font-medium">
+                          {DIMENSION_LABELS[dim]}
+                          {rankA === rankB && rankA > 0 && (
+                            <span className="ml-2 text-xs text-gray-500">=</span>
+                          )}
+                        </td>
+                        <td className={`px-4 py-3 text-center ${aWins ? "bg-accent/10" : ""}`}>
+                          <span className="font-mono font-bold text-white">{gradeA}</span>
                           {dA?.confidence && (
                             <span className="ml-1 text-xs text-gray-500">({dA.confidence})</span>
                           )}
+                          {aWins && <span className="ml-1.5 text-accent text-xs">✓</span>}
                         </td>
-                        <td className="px-4 py-3 text-center">
-                          <span className="font-mono font-bold text-white">{dB?.grade || "N/A"}</span>
+                        <td className={`px-4 py-3 text-center ${bWins ? "bg-amber-400/10" : ""}`}>
+                          <span className="font-mono font-bold text-white">{gradeB}</span>
                           {dB?.confidence && (
                             <span className="ml-1 text-xs text-gray-500">({dB.confidence})</span>
                           )}
+                          {bWins && <span className="ml-1.5 text-amber-400 text-xs">✓</span>}
                         </td>
                       </tr>
                     );
@@ -272,6 +287,47 @@ export default function Compare() {
                 </tbody>
               </table>
             </div>
+
+            {(() => {
+              let winsA = 0;
+              let winsB = 0;
+              for (const dim of DIMENSIONS) {
+                const rankA = GRADE_RANK[profileA[dim]?.grade || "N/A"] ?? 0;
+                const rankB = GRADE_RANK[profileB[dim]?.grade || "N/A"] ?? 0;
+                if (rankA > rankB) winsA++;
+                else if (rankB > rankA) winsB++;
+              }
+              const total = DIMENSIONS.length;
+              const tied = winsA === winsB;
+              return (
+                <div className="glass rounded-xl p-6 mt-8 text-center">
+                  <h3 className="text-lg font-bold text-white mb-3">Verdict</h3>
+                  <div className="flex items-center justify-center gap-6 mb-3 font-mono text-xl">
+                    <span className={`font-bold ${winsA >= winsB ? "text-accent" : "text-gray-500"}`}>
+                      {idA}: {winsA}
+                    </span>
+                    <span className="text-gray-600">—</span>
+                    <span className={`font-bold ${winsB >= winsA ? "text-amber-400" : "text-gray-500"}`}>
+                      {winsB}: {idB}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-400 mb-2">
+                    {tied
+                      ? `Tie: ${winsA}-${winsB} across ${total} dimensions`
+                      : `${winsA > winsB ? idA : idB} wins ${Math.max(winsA, winsB)}/${total} dimensions`}
+                  </p>
+                  <p className="text-base font-bold font-mono mt-1">
+                    {tied ? (
+                      <span className="text-gray-300">Dead heat</span>
+                    ) : winsA > winsB ? (
+                      <span className="text-accent">{idA} leads in trust</span>
+                    ) : (
+                      <span className="text-amber-400">{idB} leads in trust</span>
+                    )}
+                  </p>
+                </div>
+              );
+            })()}
           </>
         )}
 

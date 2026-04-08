@@ -425,6 +425,56 @@ export default function Profile() {
                 </div>
               </div>
 
+              {/* Decay countdown */}
+              {profileAge && profileAge.exists !== false && (
+                <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 mb-4">
+                  {(() => {
+                    const ttl = profileAge.ttl_seconds ?? (decayInfo?.ttl_days ?? 90) * 86400;
+                    const age = profileAge.age_seconds ?? 0;
+                    const remaining = Math.max(0, ttl - age);
+                    const elapsed = Math.min(1, age / ttl);
+                    const daysLeft = Math.ceil(remaining / 86400);
+                    const isExpired = remaining <= 0 || !profileAge.fresh;
+
+                    return (
+                      <>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-[11px] uppercase tracking-[0.22em] text-gray-600">Decay Countdown</div>
+                          {isExpired ? (
+                            <span className="text-xs text-amber-400 font-medium flex items-center gap-1">
+                              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.168 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                              </svg>
+                              Profile expired — refresh to restore tier
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400 font-medium">
+                              Refreshes in {daysLeft} day{daysLeft === 1 ? "" : "s"}
+                            </span>
+                          )}
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              isExpired
+                                ? "bg-amber-500"
+                                : elapsed > 0.75
+                                  ? "bg-amber-400"
+                                  : "bg-accent"
+                            }`}
+                            style={{ width: `${Math.round(elapsed * 100)}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between mt-1.5">
+                          <span className="text-[10px] text-gray-600 font-mono">0d</span>
+                          <span className="text-[10px] text-gray-600 font-mono">{decayInfo?.ttl_days ?? 90}d</span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={handleCopyUrl}
