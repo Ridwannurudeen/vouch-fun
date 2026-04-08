@@ -384,7 +384,7 @@ class VouchProtocol(gl.Contract):
             else:
                 conf = "high" if grade in ["A","B"] else "medium" if grade == "C" else "low" if grade == "D" else "none"
             dim_data.append((grade, conf))
-            profile[d] = {"grade": grade, "confidence": conf, "reasoning": f"AI-evaluated from live data"}
+            profile[d] = {"grade": grade, "confidence": conf, "reasoning": "AI-evaluated from live data"}
 
         try: score = max(0, min(100, int(g.get("score", -1))))
         except Exception: score = -1

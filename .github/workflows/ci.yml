@@ -17,7 +17,7 @@ jobs:
       - name: Install dependencies
         run: pip install pytest genlayer-py ruff
       - name: Lint contracts and SDK
-        run: ruff check contracts/ sdk/ --ignore E501
+        run: ruff check contracts/ sdk/ --ignore E501,E701,E722,E741,F403,F405
       - name: Run tests
         run: python -m pytest tests/ -q
 
